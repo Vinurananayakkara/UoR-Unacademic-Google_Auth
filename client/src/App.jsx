@@ -1,8 +1,7 @@
 import React from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import './App.css';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+
 
 function App() {
   const handleGoogleLogin = () => {
@@ -11,7 +10,6 @@ function App() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-white px-4">
-      <ToastContainer position="top-right" autoClose={3000} />
       <div className="bg-white rounded-xl shadow-md p-8 max-w-sm w-full text-center border border-gray-200">
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Login with Google</h1>
         <button

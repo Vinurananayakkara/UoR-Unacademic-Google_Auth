@@ -39,14 +39,19 @@ function OTPVerifyPage() {
   }, [cooldown]);
 
   const handleSubmit = async () => {
-    try {
-      await axios.post('/auth/verify-otp', { email, otp });
-      navigate('/profile');
-    } catch (err) {
-      console.error(err.response?.data || err.message);
-      alert('Invalid or expired OTP');
-    }
-  };
+  try {
+    const res = await axios.post('/auth/verify-otp', { email, otp });
+
+    // ✅ Use backend-provided redirect path
+    const redirectTo = res.data.redirectTo || '/profile';
+    navigate(redirectTo);
+
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    alert('Invalid or expired OTP');
+  }
+};
+
 
   const handleResend = async () => {
     try {

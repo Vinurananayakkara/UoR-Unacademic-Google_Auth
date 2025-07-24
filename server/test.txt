@@ -1,0 +1,384 @@
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+const authenticateUser = async (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded._id);
+    if (!user) return res.status(401).json({ message: 'User not found' });
+
+    req.user = {
+      _id: user._id,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      isVerified: user.isVerified
+    };
+
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
+};
+
+module.exports = authenticateUser;
+
+const isAdmin = (req, res, next) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ message: 'Admins only' });
+  }
+  next();
+};
+
+module.exports = isAdmin;
+
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  googleId: String,
+  email: String,
+  name: String,
+  age: Number,
+  date:String,
+  type:String,
+  verified: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false },
+  otp: String,
+  otpExpires: Date
+});
+
+module.exports = mongoose.model('User', userSchema);
+
+const express = require('express');
+const User = require('../models/User');
+const authenticateUser = require('../middleware/authenticateUser');
+const isAdmin = require('../middleware/isAdmin');
+
+const router = express.Router();
+
+router.get('/users', authenticateUser, isAdmin, async (req, res) => {
+  const users = await User.find();
+  res.json(users);
+});
+
+// ✅ DELETE user
+router.delete('/users/:id', isAdmin, async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ message: 'User deleted' });
+});
+
+// ✅ UPDATE user
+router.put('/users/:id', isAdmin, async (req, res) => {
+  const { name, age, date, type, isAdmin } = req.body;
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { name, age, date, type, isAdmin },
+    { new: true }
+  );
+  res.json({ message: 'User updated', user });
+});
+
+module.exports = router;
+
+const express = require('express');
+const passport = require('passport');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const nodemailer = require('nodemailer');
+const router = express.Router();
+
+const rateLimit = require('express-rate-limit');
+
+
+// --- Gmail SMTP transporter setup ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.USER,         // your Gmail address
+    pass: process.env.USER_PASS     // your Gmail App Password (not your normal password)
+  }
+});
+
+// --- Utility function to send OTP ---
+const sendOTP = async (email, otp) => {
+  try {
+    const mailOptions = {
+      from: `"RUCIT-UoR" <${process.env.USER}>`,
+      to: email,
+      subject: 'Your OTP Code',
+      text: `Your verification code is ${otp}`,
+      html: `<p>Your verification code is <strong>${otp}</strong></p>`
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log("✅ OTP sent successfully.");
+  } catch (error) {
+    console.error("❌ Error sending OTP:", error);
+  }
+};
+
+// --- Google OAuth ---
+const googleAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: 'Too many Google login attempts. Try again in 15 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get('/google/callback', googleAuthLimiter, passport.authenticate('google', {
+  failureRedirect: `${process.env.CLIENT_URL}/login`,
+  session: false
+}), async (req, res) => {
+  const user = req.user;
+
+  // Generate and store OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  user.otp = otp;
+  user.otpExpires = new Date(Date.now() + 10 * 60000); // 10 minutes expiry
+  await user.save();
+
+  await sendOTP(user.email, otp);
+
+  if (user.email === `${process.env.ADMIN_URL}`) {
+  res.redirect(`${process.env.CLIENT_URL}/admin`);
+} else {
+  res.redirect(`${process.env.CLIENT_URL}/verify?email=${user.email}`);
+}
+
+});
+
+// --- Rate limit for OTP resend ---
+const resendOtpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 3, // max 3 resends in 10 minutes
+  message: 'Too many OTP resend attempts. Please wait 10 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// --- Resend OTP ---
+router.post('/resend-otp', resendOtpLimiter, async (req, res) => {
+  const { email } = req.body;
+  console.log('🔁 OTP resend requested for:', email);
+
+  if (!email) {
+    console.log('⚠️ Missing email in request body');
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    console.log('🔍 User lookup result:', user);
+
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    
+
+    const newOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = newOTP;
+    user.otpExpires = new Date(Date.now() + 10 * 60000);
+    await user.save();
+    console.log('💾 New OTP saved:', newOTP);
+
+    await sendOTP(email, newOTP);
+
+    return res.json({ message: 'OTP resent successfully' });
+
+  } catch (error) {
+    console.error('🔥 Resend OTP error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+// --- OTP Verification ---
+// Limit OTP verification to 10 attempts per 15 minutes per IP
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many OTP verification attempts. Please wait and try again.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/verify-otp', otpVerifyLimiter, async (req, res) => {
+  const { email, otp } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
+    return res.status(400).json({ message: 'Invalid or expired OTP' });
+  }
+
+  user.verified = true;
+  user.otp = null;
+  await user.save();
+
+  // ✅ Create JWT token
+  const token = jwt.sign(
+    { id: user._id, email: user.email, isAdmin: user.isAdmin || false },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // HTTPS in prod
+    sameSite: 'Lax', // or 'Strict' if backend and frontend are on the same domain
+    maxAge: 60 * 60 * 1000, // 1 hour
+  });
+
+  res.json({ user }); // No token in body
+
+});
+
+// --- Save Extra Info ---
+
+const authenticateUser = (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
+};
+
+router.post('/add-info', authenticateUser, async (req, res) => {
+  try {
+    const { name, age ,date,type} = req.body;
+    const user = await User.findById(req.user.id); // from token
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found! Please log in' });
+    }
+
+    user.name = name;
+    user.age = age;
+    user.date = date;
+    user.type = type;
+    await user.save();
+
+    res.json({ message: 'User info updated successfully', user });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+module.exports = router;
+
+port=http://localhost:5000
+USER=apptest@rucit.ruh.ac.lk
+USER_PASS=rbve odeh ejvg ulxe
+JWT_SECRET=3456789okjhgfdsw3456
+CLIENT_URL=http://localhost:5173
+GOOGLE_CLIENT_ID=701671172665-favj444q9tolnm5mknk190ctig517bk6.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+GOOGLE_CALLBACK_URL=http://localhost:5000/auth/google/callback
+MONGODB_URL=mongodb+srv://vinura:vndn2001@cluster0.bepc7ti.mongodb.net/googleauth?retryWrites=true&w=majority&appName=Cluster0
+NODE_ENV=development
+ADMIN_URL=apptest@rucit.ruh.ac.lk
+
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const passport = require('passport');
+const session = require('express-session');
+require('./passport'); // Google strategy config
+const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+
+const app = express();
+require('dotenv').config();
+
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
+
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+app.use(express.json());
+//app.use(session({ secret: 'secret', resave: false, saveUninitialized: false }));
+app.use(passport.initialize());
+//app.use(passport.session());
+
+app.get('/test-session', (req, res) => {
+  res.json({
+    isAuthenticated: req.isAuthenticated(),
+    user: req.user || null
+  });
+});
+
+mongoose.connect(process.env.MONGODB_URL);
+
+app.use('/auth', authRoutes);
+app.use('/admin', adminRoutes);
+
+
+app.listen(5000, () => console.log(`Server running on ${process.env.port}`));
+
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('./models/User');
+require('dotenv').config();
+
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser((id, done) => 
+  User.findById(id).then(user => done(null, user))
+);
+
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL,
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const email = profile.emails && profile.emails[0]?.value;
+    if (!email) return done(new Error('No email found in Google profile'));
+
+    // Check if user exists by Google ID
+    let user = await User.findOne({ googleId: profile.id });
+
+    // Determine if this email should have admin privileges
+    const isAdmin = email.toLowerCase() === (process.env.ADMIN_URL || '').toLowerCase();
+
+    if (!user) {
+      // User not found by Google ID, check if existing user by email
+      const existingUser = await User.findOne({ email });
+
+      if (existingUser) {
+        // Link Google ID and update admin role if needed
+        existingUser.googleId = profile.id;
+        if (isAdmin) existingUser.isAdmin = true;
+        user = await existingUser.save();
+      } else {
+        // Create new user with admin flag if email matches
+        
+
+        user = await User.create({
+          googleId: profile.id,
+          email,
+          verified: isAdmin ? true : false,
+          isAdmin, // Assign admin role here
+        });
+      }
+    }
+    console.log('Expected admin email:', process.env.ADMIN_URL);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
+}));

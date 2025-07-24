@@ -27,8 +27,8 @@ function UserInfoPage() {
           <ul className="mb-4 text-sm">
             <li><strong>Name:</strong> {formData.name}</li>
             <li><strong>Age:</strong> {formData.age}</li>
-            <li><strong>Gender:</strong> {formData.gender}</li>
-            <li><strong>Country:</strong> {formData.country}</li>
+            <li><strong>Date:</strong> {formData.date}</li>
+            <li><strong>Type:</strong> {formData.type}</li>
           </ul>
 
           <div className="flex justify-between">

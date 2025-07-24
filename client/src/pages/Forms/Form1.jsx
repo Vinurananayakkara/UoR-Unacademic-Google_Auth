@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserInfo } from '../context/UserInfoContext.jsx';
+import { useUserInfo } from '../../context/UserInfoContext.jsx'
 
 const Form1 = () => {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const Form1 = () => {
       alert('Please fill in all fields.');
       return;
     }
-    navigate('user-info/form2');
+    navigate('/profile/form2');
   };
 
   return (

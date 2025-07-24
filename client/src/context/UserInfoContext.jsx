@@ -8,8 +8,8 @@ export const UserInfoProvider = ({ children }) => {
   const [formData, setFormData] = useState({
     name: '',
     age: '',
-    gender: '',
-    country: ''
+    date: '',
+    type: '',
   });
 
   return (

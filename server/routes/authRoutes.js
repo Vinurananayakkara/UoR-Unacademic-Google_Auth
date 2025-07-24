@@ -5,6 +5,7 @@ const User = require('../models/User');
 const nodemailer = require('nodemailer');
 const router = express.Router();
 
+
 const rateLimit = require('express-rate-limit');
 
 
@@ -60,8 +61,11 @@ router.get('/google/callback', googleAuthLimiter, passport.authenticate('google'
 
   await sendOTP(user.email, otp);
 
+
   res.redirect(`${process.env.CLIENT_URL}/verify?email=${user.email}`);
-});
+}
+
+);
 
 // --- Rate limit for OTP resend ---
 const resendOtpLimiter = rateLimit({
@@ -128,29 +132,29 @@ router.post('/verify-otp', otpVerifyLimiter, async (req, res) => {
     return res.status(400).json({ message: 'Invalid or expired OTP' });
   }
 
-  user.verified = true;
-  user.otp = null;
-  await user.save();
+ user.verified = true;
+await user.save();
 
-  // ✅ Create JWT token
-  const token = jwt.sign(
-    { id: user._id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: '1h' }
-  );
+const token = jwt.sign(
+  {
+    id: user._id,
+    email: user.email,
+    isAdmin: user.isAdmin,
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: '1h' }
+);
 
-
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // HTTPS in prod
-    sameSite: 'Lax', // or 'Strict' if backend and frontend are on the same domain
-    maxAge: 60 * 60 * 1000, // 1 hour
-  });
-
-  res.json({ user }); // No token in body
-
+// Set token in cookie
+res.cookie('token', token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'Lax',
+  maxAge: 60 * 60 * 1000,
 });
 
+res.json({ message: 'OTP verified', redirectTo: user.isAdmin ? '/admin' : '/profile' });
+});
 // --- Save Extra Info ---
 
 const authenticateUser = (req, res, next) => {
@@ -168,7 +172,7 @@ const authenticateUser = (req, res, next) => {
 
 router.post('/add-info', authenticateUser, async (req, res) => {
   try {
-    const { name, age } = req.body;
+    const { name, age ,date,type} = req.body;
     const user = await User.findById(req.user.id); // from token
 
     if (!user) {
@@ -177,6 +181,8 @@ router.post('/add-info', authenticateUser, async (req, res) => {
 
     user.name = name;
     user.age = age;
+    user.date = date;
+    user.type = type;
     await user.save();
 
     res.json({ message: 'User info updated successfully', user });
