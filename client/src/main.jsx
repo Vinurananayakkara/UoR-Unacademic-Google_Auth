@@ -11,6 +11,9 @@ import './index.css';
 import AdminDashboard from './pages/Admin_pages/AdminDashboard.jsx';
 import AdminUserDetail from './pages/Admin_pages/AdminUserDetail.jsx';
 import ApprovedUsers from './pages/Admin_pages/ApprovedUsers.jsx';
+import FinalUsers from './pages/Admin_pages/FinalUsers.jsx';
+import DeletedUsers from './pages/Admin_pages/DeletedUsers.jsx';
+ 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -21,9 +24,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/verify" element={<OTPVerifyPage />} />
         <Route path="/profile/*" element={<UserInfoRoute />} />
         
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/user/:id" element={<AdminUserDetail />} />
-        <Route path="/admin/approved" element={<ApprovedUsers />} />
+        
+          <Route path="/admin/" element={<AdminDashboard />} />
+          <Route path="/admin/approved" element={<ApprovedUsers />} />
+          <Route path="/admin/final" element={<FinalUsers />} />
+          <Route path="/admin/deleted" element={<DeletedUsers />} />
+          <Route path="/admin/user/:id" element={<AdminUserDetail />} />
+        
+
+      
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

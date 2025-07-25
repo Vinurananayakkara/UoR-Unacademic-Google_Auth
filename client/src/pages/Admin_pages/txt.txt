@@ -1,0 +1,716 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from '../../axios';
+import { toast } from 'react-toastify';
+
+function AdminDashboard() {
+  const [users, setUsers] = useState([]);
+  const [filter, setFilter] = useState('all');
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get('/admin/users', { withCredentials: true });
+      setUsers(res.data);
+    } catch (err) {
+      toast.error('Failed to fetch users');
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const updateUser = (id, updatedUser) => {
+    setUsers(prev => prev.map(u => (u._id === id ? updatedUser : u)));
+  };
+
+  const removeUser = (id) => {
+    setUsers(prev => prev.filter(u => u._id !== id));
+  };
+
+  const toggleAdmin = async (id, isAdmin) => {
+    try {
+      const res = await axios.put(`/admin/users/${id}`, { isAdmin }, { withCredentials: true });
+      updateUser(id, res.data.user);
+      toast.success('Admin status updated');
+    } catch (err) {
+      toast.error('Failed to update admin status');
+    }
+  };
+
+  const approveUser = async (id) => {
+    try {
+      const res = await axios.post(`/admin/users/${id}/approve`, {}, { withCredentials: true });
+      updateUser(id, res.data.user);
+      toast.success('User approved');
+    } catch (err) {
+      toast.error('Failed to approve user');
+    }
+  };
+
+  const finalizeUser = async (id) => {
+    try {
+      const res = await axios.post(`/admin/users/${id}/finalize`, {}, { withCredentials: true });
+      updateUser(id, res.data.user);
+      toast.success('User finalized');
+    } catch (err) {
+      toast.error('Failed to finalize user');
+    }
+  };
+
+  const softDelete = async (id) => {
+    if (!window.confirm('Soft delete this user?')) return;
+    try {
+      await axios.post(`/admin/users/${id}/soft-delete`, {}, { withCredentials: true });
+
+      updateUser(id, res.data.user);
+      toast.success('User soft-deleted');
+    } catch (err) {
+      toast.error('Soft delete failed');
+    }
+  };
+
+  const restoreUser = async (id) => {
+    try {
+      const res = await axios.post(`/admin/users/${id}/restore`, {}, { withCredentials: true });
+      updateUser(id, res.data.user);
+      toast.success('User restored');
+    } catch (err) {
+      toast.error('Restore failed');
+    }
+  };
+
+  const permanentDelete = async (id) => {
+    if (!window.confirm('Permanently delete this user?')) return;
+    try {
+      await axios.delete(`/admin/users/${id}/permanent`, { withCredentials: true });
+      removeUser(id);
+      toast.success('User permanently deleted');
+    } catch (err) {
+      toast.error('Permanent delete failed');
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    if (filter === 'all') return !user.isDeleted && !user.isApproved && !user.isFinal;
+    if (filter === 'approved') return user.isApproved && !user.isDeleted;
+    if (filter === 'final') return user.isFinal && !user.isDeleted;
+    if (filter === 'deleted') return user.isDeleted;
+    return true;
+  });
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
+
+      <nav className="mb-6 flex space-x-6 border-b pb-2 text-sm font-semibold">
+        {['all', 'approved', 'final', 'deleted'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setFilter(tab)}
+            className={`pb-1 ${
+              filter === tab ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            {tab === 'all' ? 'Users' : tab === 'approved' ? 'Approved Users' : tab === 'final' ? 'Final Users' : 'Deleted Users'}
+          </button>
+        ))}
+      </nav>
+
+      <table className="w-full border text-sm">
+        <thead>
+          <tr className="bg-gray-200 text-left">
+            <th className="border px-2 py-1">Email</th>
+            <th className="border px-2 py-1 text-center">Admin</th>
+            <th className="border px-2 py-1 text-center">Approved</th>
+            <th className="border px-2 py-1 text-center">Final</th>
+            <th className="border px-2 py-1 text-center">Deleted</th>
+            <th className="border px-2 py-1 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredUsers.length === 0 ? (
+            <tr>
+              <td colSpan="6" className="text-center py-4 text-gray-500">
+                No users to display
+              </td>
+            </tr>
+          ) : (
+            filteredUsers.map(user => (
+              <tr key={user._id} className="hover:bg-gray-50">
+                <td className="border px-2 py-1">
+                  <Link
+                    to={`/admin/user/${user._id}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {user.email}
+                  </Link>
+                </td>
+                <td className="border px-2 py-1 text-center">
+                  <input
+                    type="checkbox"
+                    checked={!!user.isAdmin}
+                    disabled={user.isDeleted}
+                    onChange={() => toggleAdmin(user._id, !user.isAdmin)}
+                  />
+                </td>
+                <td className="border px-2 py-1 text-center">
+                  {user.isApproved ? '✅' : filter === 'all' && !user.isDeleted ? (
+                    <button
+                      onClick={() => approveUser(user._id)}
+                      className="text-blue-600 hover:underline text-xs"
+                    >
+                      Approve
+                    </button>
+                  ) : '—'}
+                </td>
+                <td className="border px-2 py-1 text-center">
+                  {user.isFinal ? '✅' : filter !== 'deleted' && !user.isDeleted ? (
+                    <button
+                      onClick={() => finalizeUser(user._id)}
+                      className="text-purple-600 hover:underline text-xs"
+                    >
+                      Finalize
+                    </button>
+                  ) : '—'}
+                </td>
+                <td className="border px-2 py-1 text-center">{user.isDeleted ? '🗑️' : '—'}</td>
+                <td className="border px-2 py-1 text-center space-x-2">
+                  {!user.isDeleted ? (
+                    <button
+                      onClick={() => softDelete(user._id)}
+                      className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
+                    >
+                      Soft Delete
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => restoreUser(user._id)}
+                        className="bg-green-600 text-white px-2 py-1 rounded text-xs"
+                      >
+                        Restore
+                      </button>
+                      <button
+                        onClick={() => permanentDelete(user._id)}
+                        className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+                      >
+                        Delete Forever
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default AdminDashboard;
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from '../../axios';
+import { toast } from 'react-toastify';
+
+function AdminUserDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`/admin/users/${id}`, { withCredentials: true });
+        setUser(res.data);
+      } catch (err) {
+        toast.error('Failed to fetch user details');
+      }
+    };
+    fetchUser();
+  }, [id]);
+
+  const handleApprove = async () => {
+    try {
+      await axios.post(`/admin/users/${id}/approve`, {}, { withCredentials: true });
+      toast.success('User approved');
+      navigate('/admin');
+    } catch (err) {
+      toast.error('Approval failed');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await axios.post(`/admin/users/${id}/soft-delete`, {}, { withCredentials: true });
+
+      toast.success('User deleted');
+      navigate('/admin');
+    } catch (err) {
+      toast.error('Deletion failed');
+    }
+  };
+
+  const handleFinalize = async () => {
+  try {
+    await axios.post(`/admin/users/${id}/finalize`, {}, { withCredentials: true });
+    toast.success('User finalized');
+    navigate('/admin');
+  } catch (err) {
+    toast.error('Finalization failed');
+  }
+};
+
+
+  if (!user) return <p className="text-center mt-10">Loading user...</p>;
+
+  return (
+    <div className="p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">User Details</h2>
+      <form className="grid grid-cols-1 gap-4">
+        <input type="text" value={user.name || ''} disabled className="p-2 border rounded" />
+        <input type="email" value={user.email} disabled className="p-2 border rounded" />
+        <input type="number" value={user.age || ''} disabled className="p-2 border rounded" />
+        <input type="text" value={user.type || ''} disabled className="p-2 border rounded" />
+        <input type="text" value={user.date || ''} disabled className="p-2 border rounded" />
+        <div className="flex gap-4 mt-4 flex-wrap">
+            {!user.isApproved && (
+                <button type="button" onClick={handleApprove} className="bg-green-500 text-white px-4 py-2 rounded">Approve</button>
+            )}
+            {user.isApproved && !user.isFinal && (
+                <button type="button" onClick={handleFinalize} className="bg-blue-500 text-white px-4 py-2 rounded">Finalize</button>
+            )}
+            <button type="button" onClick={handleDelete} className="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
+            </div>
+
+      </form>
+    </div>
+  );
+}
+
+export default AdminUserDetail;
+import React, { useEffect, useState } from 'react';
+import axios from '../../axios.js';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+function AllUsers() {
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await axios.get('/admin/users', { withCredentials: true });
+        const filtered = res.data.filter(user =>
+          !user.isApproved && !user.isFinal && !user.isDeleted
+        );
+        setUsers(filtered);
+      } catch (err) {
+        toast.error('Failed to fetch users');
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">All Users</h2>
+      <table className="w-full table-auto border">
+        <thead>
+          <tr className="bg-gray-200">
+            <th className="border px-2 py-1">Name</th>
+            <th className="border px-2 py-1">Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(user => (
+            <tr key={user._id}>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.name}</Link>
+              </td>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.email}</Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default AllUsers;
+import React, { useEffect, useState } from 'react';
+import axios from '../../axios.js';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+function ApprovedUsers() {
+  const [approvedUsers, setApprovedUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchApproved = async () => {
+      try {
+        const res = await axios.get('/admin/users', { withCredentials: true });
+        const filtered = res.data.filter(user => user.isApproved && !user.isFinal && !user.isDeleted);
+        setApprovedUsers(filtered);
+      } catch (err) {
+        toast.error('Failed to fetch approved users');
+      }
+    };
+    fetchApproved();
+  }, []);
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Approved Users</h2>
+      <table className="w-full table-auto border">
+        <thead>
+          <tr className="bg-gray-200">
+            <th className="border px-2 py-1">Name</th>
+            <th className="border px-2 py-1">Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {approvedUsers.map(user => (
+            <tr key={user._id}>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.name}</Link>
+              </td>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.email}</Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default ApprovedUsers;
+import React, { useEffect, useState } from 'react';
+import axios from '../../axios.js';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+function DeletedUsers() {
+  const [deletedUsers, setDeletedUsers] = useState([]);
+
+  const fetchDeleted = async () => {
+    try {
+      const res = await axios.get('/admin/users', { withCredentials: true });
+      const filtered = res.data.filter(user => user.isDeleted);
+      setDeletedUsers(filtered);
+    } catch (err) {
+      toast.error('Failed to fetch deleted users');
+    }
+  };
+
+  useEffect(() => {
+    fetchDeleted();
+  }, []);
+
+  const handleRestore = async (id) => {
+    try {
+      await axios.post(`/admin/users/${id}/restore`, {}, { withCredentials: true });
+      toast.success('User restored');
+      setDeletedUsers(deletedUsers.filter(user => user._id !== id));
+    } catch (err) {
+      toast.error('Restore failed');
+    }
+  };
+
+  const handlePermanentDelete = async (id) => {
+    if (!window.confirm('This will permanently delete the user. Continue?')) return;
+    try {
+      await axios.delete(`/admin/users/${id}/permanent`, { withCredentials: true });
+      toast.success('User permanently deleted');
+      setDeletedUsers(deletedUsers.filter(user => user._id !== id));
+    } catch (err) {
+      toast.error('Permanent deletion failed');
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Deleted Users</h2>
+      <table className="w-full table-auto border">
+        <thead>
+          <tr className="bg-gray-200">
+            <th className="border px-2 py-1">Name</th>
+            <th className="border px-2 py-1">Email</th>
+            <th className="border px-2 py-1 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deletedUsers.map(user => (
+            <tr key={user._id}>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.name}</Link>
+              </td>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.email}</Link>
+              </td>
+              <td className="border px-2 py-1 text-center">
+                <button
+                  onClick={() => handleRestore(user._id)}
+                  className="bg-green-500 text-white px-3 py-1 rounded mr-2"
+                >
+                  Restore
+                </button>
+                <button
+                  onClick={() => handlePermanentDelete(user._id)}
+                  className="bg-red-600 text-white px-3 py-1 rounded"
+                >
+                  Delete Permanently
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default DeletedUsers;
+import React, { useEffect, useState } from 'react';
+import axios from '../../axios.js';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+function FinalUsers() {
+  const [finalUsers, setFinalUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchFinal = async () => {
+      try {
+        const res = await axios.get('/admin/users', { withCredentials: true });
+        const filtered = res.data.filter(user => user.isFinal && !user.isDeleted);
+        setFinalUsers(filtered);
+      } catch (err) {
+        toast.error('Failed to fetch final users');
+      }
+    };
+    fetchFinal();
+  }, []);
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Final Users</h2>
+      <table className="w-full table-auto border">
+        <thead>
+          <tr className="bg-gray-200">
+            <th className="border px-2 py-1">Name</th>
+            <th className="border px-2 py-1">Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {finalUsers.map(user => (
+            <tr key={user._id}>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.name}</Link>
+              </td>
+              <td className="border px-2 py-1">
+                <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.email}</Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default FinalUsers;
+
+
+const express = require('express');
+const User = require('../models/User');
+const authenticateUser = require('../middleware/authenticateUser.js');
+const isAdmin = require('../middleware/isAdmin.js');
+
+const router = express.Router();
+
+router.get('/users', authenticateUser, isAdmin, async (req, res) => {
+  const users = await User.find();
+  res.json(users);
+});
+
+router.get('/users/:id',authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+// ✅ DELETE user
+router.delete('/users/:id', authenticateUser, isAdmin, async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ message: 'User deleted' });
+});
+
+// ✅ UPDATE user
+// PUT /admin/users/:id/approve
+router.post('/users/:id/approve', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.isApproved = true;
+    await user.save();
+
+    res.json({ message: 'User approved successfully', user });
+  } catch (err) {
+    console.error('Error approving user:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Promote user to final
+router.post('/users/:id/finalize', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isFinal: true, isApproved: false }, // promote to final and remove approved
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ message: 'User finalized', user });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to finalize user' });
+  }
+});
+
+// ✅ Soft Delete
+// ✅ Soft delete route changed to POST for clarity
+router.post('/users/:id/soft-delete', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: true, isApproved: false, isFinal: false },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User marked as deleted', user });
+  } catch (err) {
+    console.error('Error soft deleting user:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+router.post('/users/:id/restore', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: false },
+      { new: true }
+    );
+    res.json({ message: 'User restored', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Restore failed' });
+  }
+});
+
+router.delete('/users/:id/permanent', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User permanently deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Permanent deletion failed' });
+  }
+});
+
+// Toggle Admin status
+router.put('/users/:id', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.isAdmin = req.body.isAdmin;
+    await user.save();
+
+    res.json({ message: 'Admin status updated', user });
+  } catch (err) {
+    console.error('Error updating admin status:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+
+
+module.exports = router;
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+import App from './App.jsx';
+import OTPVerifyPage from './pages/OTPVerifyPage.jsx';
+import UserInfoRoute from './pages/UserInfoRoutes.jsx';
+import './index.css';
+import AdminDashboard from './pages/Admin_pages/AdminDashboard.jsx';
+import AdminUserDetail from './pages/Admin_pages/AdminUserDetail.jsx';
+import ApprovedUsers from './pages/Admin_pages/ApprovedUsers.jsx';
+import FinalUsers from './pages/Admin_pages/FinalUsers.jsx';
+import DeletedUsers from './pages/Admin_pages/DeletedUsers.jsx';
+ 
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+    <ToastContainer position="top-right" autoClose={3000} />
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/verify" element={<OTPVerifyPage />} />
+        <Route path="/profile/*" element={<UserInfoRoute />} />
+        
+        
+          <Route path="/admin/" element={<AdminDashboard />} />
+          <Route path="/admin/approved" element={<ApprovedUsers />} />
+          <Route path="/admin/final" element={<FinalUsers />} />
+          <Route path="/admin/deleted" element={<DeletedUsers />} />
+          <Route path="/admin/user/:id" element={<AdminUserDetail />} />
+        
+
+      
+      </Routes>
+    </BrowserRouter>
+  </React.StrictMode>
+);
+
+import React, { createContext, useContext, useState } from 'react';
+
+const UserInfoContext = createContext();
+
+export const useUserInfo = () => useContext(UserInfoContext);
+
+export const UserInfoProvider = ({ children }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    date: '',
+    type: '',
+  });
+
+  return (
+    <UserInfoContext.Provider value={{ formData, setFormData }}>
+      {children}
+    </UserInfoContext.Provider>
+  );
+};

@@ -3,25 +3,27 @@ import axios from '../../axios.js';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-function ApprovedUsers() {
-  const [approvedUsers, setApprovedUsers] = useState([]);
+function AllUsers() {
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    const fetchApproved = async () => {
+    const fetchUsers = async () => {
       try {
         const res = await axios.get('/admin/users', { withCredentials: true });
-        const filtered = res.data.filter(user => user.isApproved && !user.isFinal && !user.isDeleted);
-        setApprovedUsers(filtered);
+        const filtered = res.data.filter(user =>
+          !user.isApproved && !user.isFinal && !user.isDeleted
+        );
+        setUsers(filtered);
       } catch (err) {
-        toast.error('Failed to fetch approved users');
+        toast.error('Failed to fetch users');
       }
     };
-    fetchApproved();
+    fetchUsers();
   }, []);
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Approved Users</h2>
+      <h2 className="text-2xl font-bold mb-4">All Users</h2>
       <table className="w-full table-auto border">
         <thead>
           <tr className="bg-gray-200">
@@ -30,7 +32,7 @@ function ApprovedUsers() {
           </tr>
         </thead>
         <tbody>
-          {approvedUsers.map(user => (
+          {users.map(user => (
             <tr key={user._id}>
               <td className="border px-2 py-1">
                 <Link to={`/admin/user/${user._id}`} className="text-blue-600 hover:underline">{user.name}</Link>
@@ -46,4 +48,4 @@ function ApprovedUsers() {
   );
 }
 
-export default ApprovedUsers;
+export default AllUsers;

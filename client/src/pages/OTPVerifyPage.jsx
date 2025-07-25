@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from '../axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+//import { useUserInfo } from '../context/UserInfoContext';
 
 
 function OTPVerifyPage() {
@@ -9,6 +10,8 @@ function OTPVerifyPage() {
   const [email, setEmail] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [resendMsg, setResendMsg] = useState('');
+  
+
   const navigate = useNavigate();
   const location = useLocation();
 

@@ -32,13 +32,25 @@ function AdminUserDetail() {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`/admin/users/${id}`, { withCredentials: true });
+      await axios.post(`/admin/users/${id}/soft-delete`, {}, { withCredentials: true });
+
       toast.success('User deleted');
       navigate('/admin');
     } catch (err) {
       toast.error('Deletion failed');
     }
   };
+
+  const handleFinalize = async () => {
+  try {
+    await axios.post(`/admin/users/${id}/finalize`, {}, { withCredentials: true });
+    toast.success('User finalized');
+    navigate('/admin');
+  } catch (err) {
+    toast.error('Finalization failed');
+  }
+};
+
 
   if (!user) return <p className="text-center mt-10">Loading user...</p>;
 
@@ -51,10 +63,16 @@ function AdminUserDetail() {
         <input type="number" value={user.age || ''} disabled className="p-2 border rounded" />
         <input type="text" value={user.type || ''} disabled className="p-2 border rounded" />
         <input type="text" value={user.date || ''} disabled className="p-2 border rounded" />
-        <div className="flex gap-4 mt-4">
-          <button type="button" onClick={handleApprove} className="bg-green-500 text-white px-4 py-2 rounded">Approve</button>
-          <button type="button" onClick={handleDelete} className="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
-        </div>
+        <div className="flex gap-4 mt-4 flex-wrap">
+            {!user.isApproved && (
+                <button type="button" onClick={handleApprove} className="bg-green-500 text-white px-4 py-2 rounded">Approve</button>
+            )}
+            {user.isApproved && !user.isFinal && (
+                <button type="button" onClick={handleFinalize} className="bg-blue-500 text-white px-4 py-2 rounded">Finalize</button>
+            )}
+            <button type="button" onClick={handleDelete} className="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
+            </div>
+
       </form>
     </div>
   );
