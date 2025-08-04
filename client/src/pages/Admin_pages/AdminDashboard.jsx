@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from '../../axios';
 import { toast } from 'react-toastify';
+import SettingsPage from './SettingsPage';
 
 function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -104,7 +105,7 @@ function AdminDashboard() {
       <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
 
       <nav className="mb-6 flex space-x-6 border-b pb-2 text-sm font-semibold">
-        {['all', 'approved', 'final', 'deleted'].map(tab => (
+        {['all', 'approved', 'final', 'deleted','settings'].map(tab => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
@@ -112,10 +113,19 @@ function AdminDashboard() {
               filter === tab ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-600'
             }`}
           >
-            {tab === 'all' ? 'Users' : tab === 'approved' ? 'Approved Users' : tab === 'final' ? 'Final Users' : 'Deleted Users'}
+            {tab === 'all' ? 'Users' : tab === 'approved' ? 'Approved Users' : tab === 'final' ? 'Final Users' : tab === 'deleted' ?'Deleted Users' : 'Settings'}
           </button>
         ))}
       </nav>
+
+      {filter === 'settings' && (
+        <div className="p-6 max-w-4xl mx-auto">
+          <h2 className="text-xl font-bold mb-4">Admin Settings</h2>
+          <SettingsPage />
+        </div>
+      )}
+      {filter !== 'settings' && (
+
 
       <table className="w-full border text-sm">
         <thead>
@@ -205,6 +215,7 @@ function AdminDashboard() {
           )}
         </tbody>
       </table>
+      )}
     </div>
   );
 }

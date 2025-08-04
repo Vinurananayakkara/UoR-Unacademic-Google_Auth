@@ -26,7 +26,8 @@ const sendOTP = async (email, otp) => {
       to: email,
       subject: 'Your OTP Code',
       text: `Your verification code is ${otp}`,
-      html: `<p>Your verification code is <strong>${otp}</strong></p>`
+      html: `<p>Your OTP is <strong>${otp}</strong></p><p>This code is valid for 10 minutes.</p><p>If you didn’t request this, ignore it.</p>`
+
     };
 
     await transporter.sendMail(mailOptions);
@@ -172,18 +173,145 @@ const authenticateUser = (req, res, next) => {
 
 router.post('/add-info', authenticateUser, async (req, res) => {
   try {
-    const { name, age ,date,type} = req.body;
-    const user = await User.findById(req.user.id); // from token
+     const {
+      date, type, post,selectedPost,
+      fullName, nameWithInitials, age, gender, dob, nic, height, chest,
+      civilStatus, permanentAddress, telephoneLand, telephoneMobile,
+      citizenship, ethnicGroup,
+      province, district, divisional_secretariat, grama_niladhari_division, police_division,
+      driving_no, driving_no_issuing_date,
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found! Please log in' });
-    }
+      // O/L & A/L
+      ol, ol_index_1, ol_index_2, ol_index_3, ol_year_1, ol_year_2, ol_year_3,
+      al, al_index_1, al_index_2, al_index_3, al_year_1, al_year_2, al_year_3,
 
-    user.name = name;
-    user.age = age;
+      // Education & Qualifications
+      schools_Attended, university, other_education, professional, sports, other,
+
+      // Work Experience
+      presentOccupation, presentOccupation_date, postGrades, pastOccupation
+
+    } = req.body;
+
+    let user = await User.findOne({
+  email: req.user.email,
+  post: { $in: post } , // Check if any matching post exists
+});
+
+if (!user && !req.user.isAdmin) {
+  // Create a new user record (even if email is the same)
+  user = new User({
+    email: req.user.email,
+    selectedPost: req.user.selectedPost// This can be an array
+  });
+}
+
+
+   // Set core info
     user.date = date;
     user.type = type;
+    user.fullName = fullName;
+    user.nameWithInitials = nameWithInitials;
+    user.age = age;
+    user.gender = gender;
+    user.dob = dob;
+    user.nic = nic;
+    user.height = height;
+    user.chest = chest;
+    user.civilStatus = civilStatus;
+    user.permanentAddress = permanentAddress;
+    user.telephoneLand = telephoneLand;
+    user.telephoneMobile = telephoneMobile;
+    user.citizenship = citizenship;
+    user.ethnicGroup = ethnicGroup;
+    user.selectedPost = selectedPost;
+
+    // Location
+    user.province = province;
+    user.district = district;
+    user.divisional_secretariat = divisional_secretariat;
+    user.grama_niladhari_division = grama_niladhari_division;
+    user.police_division = police_division;
+
+    // Driving
+    user.driving_no = driving_no;
+    user.driving_no_issuing_date = driving_no_issuing_date;
+
+    // OL and AL
+    user.ol = ol;
+    user.ol_index_1 = ol_index_1;
+    user.ol_index_2 = ol_index_2;
+    user.ol_index_3 = ol_index_3;
+    user.ol_year_1 = ol_year_1;
+    user.ol_year_2 = ol_year_2;
+    user.ol_year_3 = ol_year_3;
+
+    user.al = al;
+    user.al_index_1 = al_index_1;
+    user.al_index_2 = al_index_2;
+    user.al_index_3 = al_index_3;
+    user.al_year_1 = al_year_1;
+    user.al_year_2 = al_year_2;
+    user.al_year_3 = al_year_3;
+
+    // Education and Qualifications
+    // Education and Qualifications
+
+    user.al = typeof al === 'object' && !Array.isArray(al)
+  ? al
+  : { firstAttempt: [], secondAttempt: [], thirdAttempt: [] };
+
+  user.ol = typeof ol === 'object' && !Array.isArray(ol)
+  ? ol
+  : { firstAttempt: [], secondAttempt: [], thirdAttempt: [] };
+
+
+user.schools_Attended = Array.isArray(schools_Attended)
+  ? schools_Attended.filter(item => item.name_of_school)
+  : [];
+
+
+user.university = Array.isArray(university)
+  ? university.filter(item => item.institute && item.type && item.year && item.class && item.date)
+  : [];
+
+user.other_education = Array.isArray(other_education)
+  ? other_education.filter(item => item.institute && item.course)
+  : [];
+
+user.professional = Array.isArray(professional)
+  ? professional.filter(item => item.institute && item.course)
+  : [];
+
+user.sports = Array.isArray(sports)
+  ? sports.filter(item => item.activity)
+  : [];
+
+user.other = Array.isArray(other)
+  ? other.filter(item => item.qualification)
+  : [];
+
+// Work Experience
+user.presentOccupation = Array.isArray(presentOccupation)
+  ? presentOccupation.filter(item => item.post || item.place)
+  : [];
+
+user.postGrades = Array.isArray(postGrades)
+  ? postGrades.filter(item => item.grade)
+  : [];
+
+user.pastOccupation = Array.isArray(pastOccupation)
+  ? pastOccupation.filter(item => item.place || item.designation)
+  : [];
+
+
+    // Work
+    
+    user.presentOccupation_date = presentOccupation_date;
+   
+
     await user.save();
+
 
     res.json({ message: 'User info updated successfully', user });
   } catch (error) {
@@ -191,6 +319,7 @@ router.post('/add-info', authenticateUser, async (req, res) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
 
 
 module.exports = router;

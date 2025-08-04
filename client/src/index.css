@@ -1,0 +1,26 @@
+.a4-page {
+    border: 1px solid black;
+  width: 794px; /* equivalent to 210mm at 96dpi */
+  height: 1123px; /* equivalent to 297mm at 96dpi */
+  margin: 0 auto;
+  padding: 40px 50px;
+  background: white;
+  color: black;
+  font-family: 'Times New Roman', Times, serif;
+  position: relative;
+  box-sizing: border-box;
+  page-break-after: always;
+  overflow: hidden;
+}
+
+.page-break {
+  page-break-before: always;
+}
+
+.print-footer {
+  position: absolute;
+  bottom: 10mm;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+}

@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-      inter: ['Inter', 'sans-serif'],
+      serif: ['"Times New Roman"', 'serif'],
     },
     },
   },
