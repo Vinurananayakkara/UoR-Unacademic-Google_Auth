@@ -1,6 +1,7 @@
 import React from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import './App.css';
+import './index.css';
 
 
 function App() {

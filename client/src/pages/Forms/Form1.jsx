@@ -7,34 +7,63 @@ import { useEffect } from 'react';
 
 const Form1 = () => {
   const navigate = useNavigate();
-  const { formData, setFormData ,availableDates, setAvailableDates ,availablePosts,setAvailablePosts } = useUserInfo();
+  const {
+  formData,
+  setFormData,
+  availableDates,
+  setAvailableDates,
+  availablePosts,
+  setAvailablePosts,
+  prefillUser,
+} = useUserInfo();
+
   
 
 
   const handleNext = () => {
-    const { date, type } = formData;
-    if (!date || !type) {
-      alert('Please select Advertisement Date Application and Type.');
-      return;
-    }
+    // const { date, type } = formData;
+    // if (!date || !type) {
+    //   alert('Please select Advertisement Date Application and Type.');
+    //   return;
+    // }
     navigate('/profile/form2');
   };
 
-  useEffect(() => {
-  const fetchSettings = async () => {
-    const res = await axios.get('/admin/get-posts');
-    // Update the structure to match your data
-    const formatted = (res.data.addPosts || []).map(item => ({
-      date: item.createddate,
-      posts: item.createdposts,
-    }));
-    setAvailableDates(formatted);
-  };
-  
+useEffect(() => {
+  const fetchSettingsAndPrefill = async () => {
+    try {
+      // 1. Fetch available posts
+      const res = await axios.get('/admin/get-posts');
+      const formatted = (res.data.addPosts || []).map(item => ({
+        date: item.createddate,
+        posts: item.createdposts,
+      }));
 
-  fetchSettings();
- 
-}, []);
+      setAvailableDates(formatted);
+
+      // 2. If user is returning and has prefilled data, apply it
+      if (prefillUser) {
+        const { createddate, applicationtype, selectedPost } = prefillUser;
+
+        setFormData(prev => ({
+          ...prev,
+          date: createddate || '',
+          type: applicationtype || '',
+          post: selectedPost || ''
+        }));
+
+        const matched = formatted.find(entry => entry.date === createddate);
+        setAvailablePosts(matched ? matched.posts : []);
+      }
+
+    } catch (error) {
+      console.error('Error fetching posts or prefilling form:', error);
+    }
+  };
+
+  fetchSettingsAndPrefill();
+}, [prefillUser]);
+
 
 const handleDateChange = (e) => {
   const selectedDate = e.target.value;

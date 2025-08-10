@@ -1,104 +1,80 @@
 import { useNavigate } from 'react-router-dom';
 import { useUserInfo } from '../../context/UserInfoContext.jsx';
 import Stepper from './Stepper';
-
-const createEmptyRow = () => ({ subject: '', grade: '' });
+import React from 'react';
+import SchoolsAttendedTable from './Tables/SchoolsAttendedTable.jsx';
+import UniversityTable from './Tables/UniversityTable.jsx';
+import OtherEducationTable from './Tables/OtherEducationTable.jsx';
+import ProfessionalQualificationsTable from './Tables/ProfessionalQualificationsTable.jsx';
+import OtherQualificationsTable from './Tables/OtherQualificationsTable.jsx';
+import SportsTable from './Tables/SportsTable.jsx';
 
 const Form3 = () => {
   const navigate = useNavigate();
   const { formData, setFormData } = useUserInfo();
 
+  const AL_STREAMS = [
+    { value: '', label: '-- Select Stream --' },
+    { value: 'Science', label: 'Science' },
+    { value: 'Commerce', label: 'Commerce' },
+    { value: 'Arts', label: 'Arts' },
+    { value: 'Technology', label: 'Technology' },
+  ];
+
+  const AL_SUBJECTS = {
+    Science: [
+      'Physics', 'Chemistry', 'Biology', 'Combined Mathematics', 'Agriculture', 'ICT'
+    ],
+    Commerce: [
+      'Accounting', 'Business Studies', 'Economics', 'Business Statistics', 'ICT'
+    ],
+    Arts: [
+      'Sinhala', 'Political Science', 'Geography', 'Logic', 'Buddhism', 'History', 'ICT'
+    ],
+    Technology: [
+      'Engineering Technology', 'Science for Technology', 'Bio System Technology', 'ICT'
+    ],
+  };
+
+  const GRADE_OPTIONS = ['', 'A', 'B', 'C', 'S', 'F'];
+
+const createEmptySubjectRow = () => ({ subject: '', grade: '' });
+
+
+  // ...existing code...
+
+const addRow = (exam, attempt) => {
+  if (exam === 'ol') {
+    const updated = [...(formData.ol?.[attempt] || [])];
+    updated.push({ subject: '', grade: '' });
+    setFormData({ ...formData, ol: { ...formData.ol, [attempt]: updated } });
+  } else if (exam === 'al') {
+    const updated = [...(formData.al?.[attempt] || [])];
+    updated.push({ subject: '', grade: '' });
+    setFormData({ ...formData, al: { ...formData.al, [attempt]: updated } });
+  }
+};
+
+// ...existing code...
+
   // Set defaults if not available
   const updateOL = (attempt, index, key, value) => {
-    const updated = [...(formData.ol?.[attempt] || [createEmptyRow()])];
+    const updated = [...(formData.ol?.[attempt] || [createEmptySubjectRow()])];
     updated[index][key] = value;
     setFormData({ ...formData, ol: { ...formData.ol, [attempt]: updated } });
   };
 
   const updateAL = (attempt, index, key, value) => {
-  const updated = [...(formData.al?.[attempt] || [createEmptyRow()])];
-  updated[index][key] = value;
-  setFormData({ ...formData, al: { ...formData.al, [attempt]: updated } });
-};
-
-    
-
-  const addRow = (type, attempt = null) => {
-    if (type === 'ol') {
-      const updated = [...(formData.ol?.[attempt] || [])];
-      updated.push(createEmptyRow());
-      setFormData({ ...formData, ol: { ...formData.ol, [attempt]: updated } });
-    } else if (type === 'al') {
-    const updated = [...(formData.al?.[attempt] || [])];
-    updated.push(createEmptyRow());
+    const updated = [...(formData.al?.[attempt] || [createEmptySubjectRow()])];
+    updated[index][key] = value;
     setFormData({ ...formData, al: { ...formData.al, [attempt]: updated } });
-  }
-};
-
-    // Add new schools_Attended row
-  const addSchools_AttendedRow = () => {
-    const updated = [...(formData.schools_Attended || [])];
-    updated.push({ name_of_school: "", from: "", to: ""});
-    setFormData({ ...formData, schools_Attended: updated });
   };
 
-  // Add new university row
-  const addUniversityRow = () => {
-    const updated = [...(formData.university || [])];
-    updated.push({ institute: "", type: "", year: "", class: "", date: "" });
-    setFormData({ ...formData, university: updated });
-  };
+  // Local state for each section, initialized from context
 
-  const addProfessionalRow = () => {
-    const updated = [...(formData.professional || [])];
-    updated.push({ institute: "", course: "", from: "", to: "",date: ""});
-    setFormData({ ...formData, professional: updated });
-  };
-
-  const addOtherEducationRow = () => {
-    const updated = [...(formData.other_education || [])];
-    updated.push({ institute: "", course: "", from: "", to: "", date: "" });
-    setFormData({ ...formData, other_education: updated });
-  };
-
-  const addOtherRow = () => {
-    const updated = [...(formData.other || [])];
-    updated.push({ qualification: "", year: "" });
-    setFormData({ ...formData, other: updated });
-  };
-
-  const addSportsRow = () => {
-    const updated = [...(formData.sports || [])];
-    updated.push({ activity: "", year: "", award: "" });
-    setFormData({ ...formData, sports: updated });
-  };
-
-   const renderInputRow = (fields, name, handler) => (
-    <tbody>
-      {fields?.map((row, i) => (
-        <tr key={i}>
-          {Object.keys(row).map((key) => (
-            <td className="border border-black" key={key}>
-              <input
-                value={row[key]}
-                onChange={(e) => {
-                  const updated = [...fields];
-                  updated[i][key] = e.target.value;
-                  setFormData({ ...formData, [name]: updated });
-                }}
-                className="w-full px-1"
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  );
-
-
-
+  // Save all to context before next step
   const handleNext = () => {
-
+    
     navigate('/profile/form4');
   };
 
@@ -108,46 +84,28 @@ const Form3 = () => {
         <Stepper currentStep={2} />
         <h2 className="text-xl font-semibold mb-6 text-center">Step 2: Educational Qualifications</h2>
 
-        <div>
-            <h3 className="text-lg font-bold mb-2">Schools Attended</h3>
-            
-            <div className="overflow-x-auto mb-4">
-          <table className="table-auto w-full border mb-2">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border border-black">Name Of School</th>
-              <th className="border border-black">From</th>
-              <th className="border border-black">To</th>
-            
-            </tr>
-          </thead>
-          {renderInputRow(formData.schools_Attended, 'schools_Attended', addSchools_AttendedRow)}
-        </table>
-        <button onClick={addSchools_AttendedRow} className="bg-blue-400 text-white px-4 py-1 rounded w-full sm:w-auto hover:bg-blue-500">+ Add Row</button>
-
-          </div>
-          </div>
+        <SchoolsAttendedTable />
 
         {/* O/L First Attempt */}
         <h3 className="block font-medium mb-1">G.C.E. (O/L) - First Attempt</h3>
         <div>
-            <label className="block font-medium mb-1">Year.</label>
-            <input
-              type="text"
-              value={formData.ol_year_1 || ''}
-              onChange={(e) => setFormData({ ...formData, ol_year_1: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--2023--'
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Index No.</label>
-            <input
-              type="text"
-              value={formData.ol_index_1 || ''}
-              onChange={(e) => setFormData({ ...formData, ol_index_1: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
-            />
-          </div>
+          <label className="block font-medium mb-1">Year.</label>
+          <input
+            type="text"
+            value={formData.ol_year_1 || ''}
+            onChange={(e) => setFormData({ ...formData, ol_year_1: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--2023--'
+          />
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Index No.</label>
+          <input
+            type="text"
+            value={formData.ol_index_1 || ''}
+            onChange={(e) => setFormData({ ...formData, ol_index_1: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
+          />
+        </div>
         <div className="overflow-x-auto mb-4">
           <table className="table-auto w-full border mb-2">
             <thead>
@@ -157,7 +115,7 @@ const Form3 = () => {
               </tr>
             </thead>
             <tbody>
-              {(formData.ol?.firstAttempt || [createEmptyRow()]).map((row, index) => (
+              {(formData.ol?.firstAttempt || [createEmptySubjectRow()]).map((row, index) => (
                 <tr key={index}>
                   <td className="border p-2">
                     <input
@@ -187,23 +145,23 @@ const Form3 = () => {
         {/* O/L Second Attempt */}
         <h3 className="block font-medium mb-1">G.C.E. (O/L) - Second Attempt</h3>
         <div>
-            <label className="block font-medium mb-1">Year.</label>
-            <input
-              type="text"
-              value={formData.ol_year_2 || ''}
-              onChange={(e) => setFormData({ ...formData, ol_year_2: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--2023--'
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Index No.</label>
-            <input
-              type="text"
-              value={formData.ol_index_2 || ''}
-              onChange={(e) => setFormData({ ...formData, ol_index_2: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
-            />
-          </div>
+          <label className="block font-medium mb-1">Year.</label>
+          <input
+            type="text"
+            value={formData.ol_year_2 || ''}
+            onChange={(e) => setFormData({ ...formData, ol_year_2: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--2023--'
+          />
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Index No.</label>
+          <input
+            type="text"
+            value={formData.ol_index_2 || ''}
+            onChange={(e) => setFormData({ ...formData, ol_index_2: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
+          />
+        </div>
         <div className="overflow-x-auto mb-4">
           <table className="table-auto w-full border mb-2">
             <thead>
@@ -213,7 +171,7 @@ const Form3 = () => {
               </tr>
             </thead>
             <tbody>
-              {(formData.ol?.secondAttempt || [createEmptyRow()]).map((row, index) => (
+              {(formData.ol?.secondAttempt || [createEmptySubjectRow()]).map((row, index) => (
                 <tr key={index}>
                   <td className="border p-2">
                     <input
@@ -243,23 +201,23 @@ const Form3 = () => {
         {/* O/L Third Attempt */}
         <h3 className="block font-medium mb-1">G.C.E. (O/L) - Third Attempt</h3>
         <div>
-            <label className="block font-medium mb-1">Year.</label>
-            <input
-              type="text"
-              value={formData.ol_year_3 || ''}
-              onChange={(e) => setFormData({ ...formData, ol_year_3: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--2023--'
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Index No.</label>
-            <input
-              type="text"
-              value={formData.ol_index_3 || ''}
-              onChange={(e) => setFormData({ ...formData, ol_index_3: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
-            />
-          </div>
+          <label className="block font-medium mb-1">Year.</label>
+          <input
+            type="text"
+            value={formData.ol_year_3 || ''}
+            onChange={(e) => setFormData({ ...formData, ol_year_3: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--2023--'
+          />
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Index No.</label>
+          <input
+            type="text"
+            value={formData.ol_index_3 || ''}
+            onChange={(e) => setFormData({ ...formData, ol_index_3: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
+          />
+        </div>
         <div className="overflow-x-auto mb-4">
           <table className="table-auto w-full border mb-2">
             <thead>
@@ -269,7 +227,7 @@ const Form3 = () => {
               </tr>
             </thead>
             <tbody>
-              {(formData.ol?.thirdAttempt || [createEmptyRow()]).map((row, index) => (
+              {(formData.ol?.thirdAttempt || [createEmptySubjectRow()]).map((row, index) => (
                 <tr key={index}>
                   <td className="border p-2">
                     <input
@@ -296,26 +254,37 @@ const Form3 = () => {
           </button>
         </div>
 
-        {/* A/L First Attempt*/}
+        {/* A/L First Attempt */}
         <h3 className="block font-medium mb-1">G.C.E. (A/L) - First Attempt</h3>
         <div>
-            <label className="block font-medium mb-1">Year.</label>
-            <input
-              type="text"
-              value={formData.al_year_1 || ''}
-              onChange={(e) => setFormData({ ...formData, al_year_1: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--2023--'
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Index No.</label>
-            <input
-              type="text"
-              value={formData.al_index_1 || ''}
-              onChange={(e) => setFormData({ ...formData, al_index_1: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
-            />
-          </div>
+          <label className="block font-medium mb-1">Year.</label>
+          <input
+            type="text"
+            value={formData.al_year_1 || ''}
+            onChange={(e) => setFormData({ ...formData, al_year_1: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--2023--'
+          />
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Index No.</label>
+          <input
+            type="text"
+            value={formData.al_index_1 || ''}
+            onChange={(e) => setFormData({ ...formData, al_index_1: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
+          />
+        </div>
+        <label className="block font-medium mb-1">Stream</label>
+        <select
+          value={formData.al_stream_1 || ''}
+          onChange={e => setFormData({ ...formData, al_stream_1: e.target.value })}
+          className="w-full px-3 py-2 border rounded mb-2"
+        >
+          {AL_STREAMS.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+
         <div className="overflow-x-auto mb-4">
           <table className="table-auto w-full border mb-2">
             <thead>
@@ -325,23 +294,30 @@ const Form3 = () => {
               </tr>
             </thead>
             <tbody>
-              {(formData.al?.firstAttempt || [createEmptyRow()]).map((row, index) => (
+              {(formData.al?.firstAttempt || [createEmptySubjectRow()]).map((row, index) => (
                 <tr key={index}>
                   <td className="border p-2">
-                    <input
-                      type="text"
+                    <select
                       value={row.subject}
-                      onChange={(e) => updateAL('firstAttempt',index, 'subject', e.target.value)}
-                      className="w-full px-2 py-1 border rounded" placeholder='--Physics--'
-                    />
+                      onChange={e => updateAL('firstAttempt', index, 'subject', e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      <option value="">-- Select Subject --</option>
+                      {(AL_SUBJECTS[formData.al_stream_1] || []).map(subj => (
+                        <option key={subj} value={subj}>{subj}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="border p-2">
-                    <input
-                      type="text"
+                    <select
                       value={row.grade}
-                      onChange={(e) => updateAL('firstAttempt',index, 'grade', e.target.value)}
-                      className="w-full px-2 py-1 border rounded" placeholder='--A--'
-                    />
+                      onChange={e => updateAL('firstAttempt', index, 'grade', e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      {GRADE_OPTIONS.map(g => (
+                        <option key={g} value={g}>{g || '-- Select Grade --'}</option>
+                      ))}
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -352,26 +328,37 @@ const Form3 = () => {
           </button>
         </div>
 
-         {/* A/L Second Attempt*/}
+        {/* A/L Second Attempt */}
         <h3 className="block font-medium mb-1">G.C.E. (A/L) - Second Attempt</h3>
         <div>
-            <label className="block font-medium mb-1">Year.</label>
-            <input
-              type="text"
-              value={formData.al_year_2 || ''}
-              onChange={(e) => setFormData({ ...formData, al_year_2: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--2023--'
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Index No.</label>
-            <input
-              type="text"
-              value={formData.al_index_2 || ''}
-              onChange={(e) => setFormData({ ...formData, al_index_2: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
-            />
-          </div>
+          <label className="block font-medium mb-1">Year.</label>
+          <input
+            type="text"
+            value={formData.al_year_2 || ''}
+            onChange={(e) => setFormData({ ...formData, al_year_2: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--2023--'
+          />
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Index No.</label>
+          <input
+            type="text"
+            value={formData.al_index_2 || ''}
+            onChange={(e) => setFormData({ ...formData, al_index_2: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
+          />
+        </div>
+        <label className="block font-medium mb-1">Stream</label>
+        <select
+          value={formData.al_stream_2 || ''}
+          onChange={e => setFormData({ ...formData, al_stream_2: e.target.value })}
+          className="w-full px-3 py-2 border rounded mb-2"
+        >
+          {AL_STREAMS.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+
         <div className="overflow-x-auto mb-4">
           <table className="table-auto w-full border mb-2">
             <thead>
@@ -381,23 +368,30 @@ const Form3 = () => {
               </tr>
             </thead>
             <tbody>
-              {(formData.al?.secondAttempt || [createEmptyRow()]).map((row, index) => (
+              {(formData.al?.secondAttempt || [createEmptySubjectRow()]).map((row, index) => (
                 <tr key={index}>
                   <td className="border p-2">
-                    <input
-                      type="text"
+                    <select
                       value={row.subject}
-                      onChange={(e) => updateAL('secondAttempt',index, 'subject', e.target.value)}
-                      className="w-full px-2 py-1 border rounded" placeholder='--Physics--'
-                    />
+                      onChange={e => updateAL('secondAttempt', index, 'subject', e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      <option value="">-- Select Subject --</option>
+                      {(AL_SUBJECTS[formData.al_stream_2] || []).map(subj => (
+                        <option key={subj} value={subj}>{subj}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="border p-2">
-                    <input
-                      type="text"
+                    <select
                       value={row.grade}
-                      onChange={(e) => updateAL('secondAttempt',index, 'grade', e.target.value)}
-                      className="w-full px-2 py-1 border rounded" placeholder='--A--'
-                    />
+                      onChange={e => updateAL('secondAttempt', index, 'grade', e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      {GRADE_OPTIONS.map(g => (
+                        <option key={g} value={g}>{g || '-- Select Grade --'}</option>
+                      ))}
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -408,26 +402,37 @@ const Form3 = () => {
           </button>
         </div>
 
-         {/* A/L Third Attempt*/}
+        {/* A/L Third Attempt */}
         <h3 className="block font-medium mb-1">G.C.E. (A/L) - Third Attempt</h3>
         <div>
-            <label className="block font-medium mb-1">Year.</label>
-            <input
-              type="text"
-              value={formData.al_year_3 || ''}
-              onChange={(e) => setFormData({ ...formData, al_year_3: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--2023--'
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Index No.</label>
-            <input
-              type="text"
-              value={formData.al_index_3 || ''}
-              onChange={(e) => setFormData({ ...formData, al_index_3: e.target.value })}
-              className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
-            />
-          </div>
+          <label className="block font-medium mb-1">Year.</label>
+          <input
+            type="text"
+            value={formData.al_year_3 || ''}
+            onChange={(e) => setFormData({ ...formData, al_year_3: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--2023--'
+          />
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Index No.</label>
+          <input
+            type="text"
+            value={formData.al_index_3 || ''}
+            onChange={(e) => setFormData({ ...formData, al_index_3: e.target.value })}
+            className="w-full px-3 py-2 border rounded" placeholder='--123456789--'
+          />
+        </div>
+        <label className="block font-medium mb-1">Stream</label>
+        <select
+          value={formData.al_stream_3 || ''}
+          onChange={e => setFormData({ ...formData, al_stream_3: e.target.value })}
+          className="w-full px-3 py-2 border rounded mb-2"
+        >
+          {AL_STREAMS.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+
         <div className="overflow-x-auto mb-4">
           <table className="table-auto w-full border mb-2">
             <thead>
@@ -437,23 +442,30 @@ const Form3 = () => {
               </tr>
             </thead>
             <tbody>
-              {(formData.al?.thirdAttempt || [createEmptyRow()]).map((row, index) => (
+              {(formData.al?.thirdAttempt || [createEmptySubjectRow()]).map((row, index) => (
                 <tr key={index}>
                   <td className="border p-2">
-                    <input
-                      type="text"
+                    <select
                       value={row.subject}
-                      onChange={(e) => updateAL('thirdAttempt',index, 'subject', e.target.value)}
-                      className="w-full px-2 py-1 border rounded" placeholder='--Physics--'
-                    />
+                      onChange={e => updateAL('thirdAttempt', index, 'subject', e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      <option value="">-- Select Subject --</option>
+                      {(AL_SUBJECTS[formData.al_stream_3] || []).map(subj => (
+                        <option key={subj} value={subj}>{subj}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="border p-2">
-                    <input
-                      type="text"
+                    <select
                       value={row.grade}
-                      onChange={(e) => updateAL('thirdAttempt',index, 'grade', e.target.value)}
-                      className="w-full px-2 py-1 border rounded" placeholder='--A--'
-                    />
+                      onChange={e => updateAL('thirdAttempt', index, 'grade', e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      {GRADE_OPTIONS.map(g => (
+                        <option key={g} value={g}>{g || '-- Select Grade --'}</option>
+                      ))}
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -465,96 +477,25 @@ const Form3 = () => {
         </div>
 
         {/* Additional Qualifications */}
-       
-        
-          
-          <div>
-            <h3 className="block font-medium mb-1">Professional Qualifications</h3>
-            <table className="table-auto w-full border mb-2">
-            <thead>
-              <tr>
-                <th className="border border-black">Institution</th>
-                <th className="border border-black">Course</th>
-                <th className="border border-black">From</th>
-                <th className="border border-black">To</th>
-                <th className="border border-black">Effective Date</th>
-              </tr>
-            </thead>
-            {renderInputRow(formData.professional, 'professional', addProfessionalRow)}
-            </table>
-            <button onClick={addProfessionalRow} className="bg-blue-400 text-white px-4 py-1 rounded w-full sm:w-auto hover:bg-blue-500">+ Add Row</button>
-          </div>
-
-          <div>  
-          <h3 className="block font-medium mb-1">University Education</h3>
-          <table className="table-auto w-full border mb-2">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border border-black">Institute</th>
-              <th className="border border-black">Degree/Diploma</th>
-              <th className="border border-black">Year</th>
-              <th className="border border-black">Class</th>
-              <th className="border border-black">Effective Date</th>
-            </tr>
-          </thead>
-          {renderInputRow(formData.university, 'university', addUniversityRow)}
-        </table>
-        <button onClick={addUniversityRow} className="bg-blue-400 text-white px-4 py-1 rounded w-full sm:w-auto hover:bg-blue-500">+ Add Row</button>
-
+        <div>
+          <ProfessionalQualificationsTable />
         </div>
 
-          
-          <div>
-            <label className="block font-medium mb-1">Other Eductional Qualifications</label>
-            
-            <table className="table-auto w-full border mb-2">
-          <thead>
-            <tr>
-              <th className="border border-black">Qualification</th>
-              <th className="border border-black">Institution</th>
-              <th className="border border-black">From</th>
-              <th className="border border-black">To</th>
-              <th className="border border-black">Effective Date</th>
-            </tr>
-          </thead>
-          {renderInputRow(formData.other_education, 'other_education', addOtherEducationRow)}
-        </table>
-        <button onClick={addOtherEducationRow} className="bg-blue-400 text-white px-4 py-1 rounded w-full sm:w-auto hover:bg-blue-500">+ Add Row</button>
+        <div>
+          <UniversityTable />
+        </div>
 
-          </div>
+        <div>
+          <OtherEducationTable />
+        </div>
 
-          <div>
-            <label className="block font-medium mb-1">Other Qualifications</label>
-              
-              <table className="table-auto w-full border mb-2">
-          <thead>
-            <tr>
-              <th className="border border-black">Qualification</th>
-              <th className="border border-black">Year</th>
-            </tr>
-          </thead>
-          {renderInputRow(formData.other, 'other', addOtherRow)}
-        </table>
-        <button onClick={addOtherRow} className="bg-blue-400 text-white px-4 py-1 rounded w-full sm:w-auto hover:bg-blue-500">+ Add Row</button>
+        <div>
+            <OtherQualificationsTable />
+        </div>
 
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Sports Qualifications</label>
-            <table className="table-auto w-full border mb-2">
-          <thead>
-            <tr>
-              <th className="border border-black">Activity</th>
-              <th className="border border-black">Year</th>
-              <th className="border border-black">Award</th>
-            </tr>
-          </thead>
-          {renderInputRow(formData.sports, 'sports', addSportsRow)}
-        </table>
-        <button onClick={addSportsRow} className="bg-blue-400 text-white px-4 py-1 rounded w-full sm:w-auto hover:bg-blue-500">+ Add Row</button>
-          </div>
-
-       
+        <div>
+          <SportsTable />
+        </div>
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6">
           <button
@@ -572,9 +513,7 @@ const Form3 = () => {
         </div>
       </div>
     </div>
-  
   );
 };
-
 
 export default Form3;

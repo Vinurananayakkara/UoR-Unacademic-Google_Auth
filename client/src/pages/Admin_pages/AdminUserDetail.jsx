@@ -98,6 +98,16 @@ const underlineField = (value, width = 'w-[30%]') => (
     {/* Page 2: OL/AL Results */}
     <section>
       <h3 className="text-xl font-semibold mb-2">Page 2: Educational Qualifications</h3>
+
+      <p><strong>Schools Attended:</strong> </p>
+      <table className="w-full border text-sm my-2">
+        <thead><tr><th>Name of School</th><th>From</th><th>To</th></tr></thead>
+        <tbody>
+          {user.schools_Attended.map((row, i) => (
+            <tr key={i}><td>{row.name_of_school}</td><td>{row.from}</td><td>{row.to}</td></tr>
+          ))}
+        </tbody>
+      </table>
       {/* OL First Attempt */}
       <p><strong>O/L First Attempt - Index No.:</strong> {user.ol_index_1} | <strong>Year:</strong> {user.ol_year_1}</p>
       <table className="w-full border text-sm my-2">
@@ -135,8 +145,16 @@ const underlineField = (value, width = 'w-[30%]') => (
     {/* Page 3: Qualifications + Present Occupation */}
     <section>
       <h3 className="text-xl font-semibold mb-2">Page 3: Other Qualifications & Present Occupation</h3>
-      <p><strong>University Education:</strong> {underlineField(user.university)}</p>
-      <p><strong>Professional Qualifications:</strong> {underlineField(user.professional)}</p>
+      <p><strong>University Education:</strong> </p>
+      <table className="w-full border text-sm my-2">
+        <thead><tr><th>Institute</th><th>Degree/Diploma</th><th>Year</th><th>Class</th><th>Effective Date</th></tr></thead>
+        <tbody>
+          {user.university.map((row, i) => (
+            <tr key={i}><td>{row.Institute}</td><td>{row.type}</td><td>{row.year}</td><td>{row.class}</td><td>{row.date}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <p><strong>Professional Qualifications:</strong></p>
       <p><strong>Sports Qualifications:</strong> {underlineField(user.sports)}</p>
       <p><strong>Other Qualifications:</strong> {underlineField(user.other)}</p>
 

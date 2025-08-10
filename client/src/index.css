@@ -1,26 +1,99 @@
-.a4-page {
-    border: 1px solid black;
-  width: 794px; /* equivalent to 210mm at 96dpi */
-  height: 1123px; /* equivalent to 297mm at 96dpi */
-  margin: 0 auto;
-  padding: 40px 50px;
-  background: white;
-  color: black;
-  font-family: 'Times New Roman', Times, serif;
-  position: relative;
-  box-sizing: border-box;
-  page-break-after: always;
-  overflow: hidden;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-.page-break {
-  page-break-before: always;
-}
+@layer base {
+  .a4-page {
+    width: 210mm;
+    min-height: 297mm;
+    max-width: 210mm;
+    margin: 0 auto;
+    background: #fff;
+    box-sizing: border-box;
+    padding: 20mm 15mm 25mm 15mm;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Times New Roman', Times, serif;
+  }
 
-.print-footer {
-  position: absolute;
-  bottom: 10mm;
-  width: 100%;
-  text-align: center;
-  font-size: 12px;
+  .page-break {
+    page-break-after: always;
+  }
+
+  @media print {
+    body {
+      background: none !important;
+    }
+    .a4-page {
+      width: 210mm !important;
+      min-height: 297mm !important;
+      max-width: 210mm !important;
+      margin: 0 auto !important;
+      background: #fff !important;
+      box-sizing: border-box !important;
+      padding: 20mm 15mm 25mm 15mm !important;
+      position: relative !important;
+      overflow: hidden !important;
+      font-family: 'Times New Roman', Times, serif !important;
+    }
+    .page-break {
+      page-break-after: always !important;
+    }
+    .print-footer {
+      position: absolute !important;
+      bottom: 10mm !important;
+      left: 0 !important;
+      width: 100% !important;
+      text-align: center !important;
+      font-size: 12px !important;
+      color: #333 !important;
+    }
+  }
+
+  .underline-field {
+    @apply inline-block ml-2 align-bottom;
+    border-bottom: 1px solid black;
+    min-width: 80px;
+    min-height: 1.2em;
+    line-height: 1.3em;
+    padding-bottom: 2px;
+    white-space: nowrap;
+    overflow-wrap: break-word;
+  }
+
+  table {
+    @apply w-full border-collapse text-[12px];
+    table-layout: fixed;
+  }
+
+  th, td {
+    @apply border border-black px-1 py-1 align-top;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .print-footer {
+    @apply text-center text-[10px] w-full;
+    position: absolute;
+    bottom: 10mm;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: #333;
+  }
+
+  img {
+    display: initial;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .heading {
+    @apply text-sm font-semibold mb-2;
+  }
+
+  .section-spacing {
+    margin-bottom: 8mm;
+  }
 }

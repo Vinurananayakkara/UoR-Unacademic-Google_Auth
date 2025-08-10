@@ -8,6 +8,43 @@ const router = express.Router();
 
 const rateLimit = require('express-rate-limit');
 
+const multer = require('multer');
+const path = require('path');
+
+// Set up Multer storage
+const fs = require('fs');
+const storage = multer.diskStorage({
+  destination: async function (req, file, cb) {
+    try {
+      let user;
+
+      if (req.session?.returningUserId) {
+        user = await User.findById(req.session.returningUserId);
+      } else {
+        user = await User.findById(req.user.id);
+      }
+
+      if (!user || !user.nic || !user.selectedPost) {
+        return cb(new Error('Missing NIC or selected post information'));
+      }
+
+      const uploadPath = path.join(__dirname, '../uploads', user.nic, user.selectedPost);
+      fs.mkdirSync(uploadPath, { recursive: true });
+
+      cb(null, uploadPath);
+    } catch (error) {
+      cb(error);
+    }
+  },
+  filename: function (req, file, cb) {
+    cb(null, req.user.id + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
+
+
+
 
 // --- Gmail SMTP transporter setup ---
 const transporter = nodemailer.createTransport({
@@ -52,15 +89,26 @@ router.get('/google/callback', googleAuthLimiter, passport.authenticate('google'
   failureRedirect: `${process.env.CLIENT_URL}/login`,
   session: false
 }), async (req, res) => {
-  const user = req.user;
+  let user = await User.findOne({ email: req.user.email });
+
+if (!user) {
+  user = new User({
+    googleId: req.user.id,
+    email: req.user.email,
+    verified: false
+  });
+}
 
   // Generate and store OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  user.otp = otp;
-  user.otpExpires = new Date(Date.now() + 10 * 60000); // 10 minutes expiry
-  await user.save();
-
+  await User.findOneAndUpdate(
+  { email: user.email },
+  { otp, otpExpires: new Date(Date.now() + 10 * 60000) },
+  { upsert: true, new: true }
+);
+  
   await sendOTP(user.email, otp);
+  console.log("otp is :", otp);
 
 
   res.redirect(`${process.env.CLIENT_URL}/verify?email=${user.email}`);
@@ -88,31 +136,33 @@ router.post('/resend-otp', resendOtpLimiter, async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
-    console.log('🔍 User lookup result:', user);
+    const newOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const user = await User.findOneAndUpdate(
+      { email },
+      {
+        otp: newOTP,
+        otpExpires: new Date(Date.now() + 10 * 60000)
+      },
+      { new: true } // return updated user
+    );
 
     if (!user) {
       console.log('❌ User not found');
       return res.status(404).json({ message: 'User not found' });
     }
 
-    
-
-    const newOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    user.otp = newOTP;
-    user.otpExpires = new Date(Date.now() + 10 * 60000);
-    await user.save();
-    console.log('💾 New OTP saved:', newOTP);
-
     await sendOTP(email, newOTP);
+    console.log('✅ OTP resent successfully to:', email);
+    console.log('✅ New OTP:', newOTP);
 
-    return res.json({ message: 'OTP resent successfully' });
-
+    res.json({ message: 'OTP resent successfully' });
   } catch (error) {
     console.error('🔥 Resend OTP error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 // --- OTP Verification ---
@@ -133,29 +183,50 @@ router.post('/verify-otp', otpVerifyLimiter, async (req, res) => {
     return res.status(400).json({ message: 'Invalid or expired OTP' });
   }
 
- user.verified = true;
-await user.save();
+  user.verified = true;
+  user.otp = null;
+  user.otpExpires = null;
+  await user.save();
 
-const token = jwt.sign(
-  {
-    id: user._id,
-    email: user.email,
-    isAdmin: user.isAdmin,
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: '1h' }
-);
+  const token = jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      isAdmin: user.isAdmin,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
 
-// Set token in cookie
-res.cookie('token', token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'Lax',
-  maxAge: 60 * 60 * 1000,
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Lax',
+    maxAge: 60 * 60 * 1000,
+  });
+
+  // ✅ Redirect logic
+if (user.isAdmin) {
+  return res.json({ message: 'OTP verified', redirectTo: '/admin' });
+}
+  // ✅ Add custom redirect logic for isSubmitted = false
+  if (!user.isSubmitted) {
+    return res.json({
+      message: 'Need clarification',
+      askAction: true, // frontend can use this flag
+      options: ['Apply for a new post', 'Continue existing application'],
+    });
+  }
+
+  // ✅ For already submitted users, allow multi-application
+  let redirectTo = user.infoSuccess
+    ? '/upload-file'
+    : '/profile';
+
+  return res.json({ message: 'OTP verified', redirectTo });
 });
 
-res.json({ message: 'OTP verified', redirectTo: user.isAdmin ? '/admin' : '/profile' });
-});
+
 // --- Save Extra Info ---
 
 const authenticateUser = (req, res, next) => {
@@ -171,154 +242,245 @@ const authenticateUser = (req, res, next) => {
   }
 };
 
+const sendUploadInstructions = async (email) => {
+  try {
+    const mailOptions = {
+      from: `"RUCIT-UoR" <${process.env.USER}>`,
+      to: email,
+      subject: 'Next Step: Upload Your Documents',
+      text: `Your information has been successfully saved.
+
+Please continue your application by uploading a SINGLE .zip file containing:
+- Passport size photograph
+- Copy of NIC
+- Other essential documents
+
+Login to your account and proceed with the upload.`,
+      html: `
+        <p>Your information has been successfully saved.</p>
+        <p><strong>Please continue your application by uploading a SINGLE .zip file</strong> containing:</p>
+        <ul>
+          <li>Passport size photograph</li>
+          <li>Copy of NIC</li>
+          <li>Other essential documents</li>
+        </ul>
+        <p>Login to your account and proceed with the upload.</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`📩 Upload instructions sent to ${email}`);
+  } catch (error) {
+    console.error("❌ Error sending upload instructions:", error);
+  }
+};
+
+
 router.post('/add-info', authenticateUser, async (req, res) => {
   try {
-     const {
-      date, type, post,selectedPost,
+    const {email,
+      date, type, post, selectedPost,
       fullName, nameWithInitials, age, gender, dob, nic, height, chest,
       civilStatus, permanentAddress, telephoneLand, telephoneMobile,
       citizenship, ethnicGroup,
       province, district, divisional_secretariat, grama_niladhari_division, police_division,
-      driving_no, driving_no_issuing_date,
-
-      // O/L & A/L
-      ol, ol_index_1, ol_index_2, ol_index_3, ol_year_1, ol_year_2, ol_year_3,
-      al, al_index_1, al_index_2, al_index_3, al_year_1, al_year_2, al_year_3,
-
-      // Education & Qualifications
-      schools_Attended, university, other_education, professional, sports, other,
-
-      // Work Experience
-      presentOccupation, presentOccupation_date, postGrades, pastOccupation
-
+      driving_no ,driving_issue_date
     } = req.body;
+ 
+     const userEmail = email || req.user.email;
 
-    let user = await User.findOne({
-  email: req.user.email,
-  post: { $in: post } , // Check if any matching post exists
-});
+    // First check if a record exists with same email, nic, and selectedPost
+   const existingUser = await User.findOneAndUpdate(
+  {
+    email: userEmail,
+    nic,
+    selectedPost
+  },
+  {
+    $set: {
+      email,nic,date, type, post, selectedPost,
+      fullName, nameWithInitials, age, gender, dob, height, chest,
+      civilStatus, permanentAddress, telephoneLand, telephoneMobile,
+      citizenship, ethnicGroup,
+      province, district, divisional_secretariat, grama_niladhari_division, police_division,
+      driving_no, driving_issue_date,infoSuccess:true
+    }
+  },
+  { new: true }
 
-if (!user && !req.user.isAdmin) {
-  // Create a new user record (even if email is the same)
-  user = new User({
-    email: req.user.email,
-    selectedPost: req.user.selectedPost// This can be an array
+);
+
+
+if (existingUser) {
+  await sendUploadInstructions(userEmail); // Send upload instructions
+  return res.json({
+    success: true,
+    message: 'User information updated successfully',
+    user: existingUser,
+    infoSuccess:true,
   });
 }
 
+    // If no existing record, create new one
+    const newUser = new User({
+      email: userEmail,
+      date, type, post, selectedPost,
+      fullName, nameWithInitials, age, gender, dob, nic, height, chest,
+      civilStatus, permanentAddress, telephoneLand, telephoneMobile,
+      citizenship, ethnicGroup,
+      province, district, divisional_secretariat, grama_niladhari_division, police_division,
+      driving_no, driving_issue_date,infoSuccess:true
+    });
 
-   // Set core info
-    user.date = date;
-    user.type = type;
-    user.fullName = fullName;
-    user.nameWithInitials = nameWithInitials;
-    user.age = age;
-    user.gender = gender;
-    user.dob = dob;
-    user.nic = nic;
-    user.height = height;
-    user.chest = chest;
-    user.civilStatus = civilStatus;
-    user.permanentAddress = permanentAddress;
-    user.telephoneLand = telephoneLand;
-    user.telephoneMobile = telephoneMobile;
-    user.citizenship = citizenship;
-    user.ethnicGroup = ethnicGroup;
-    user.selectedPost = selectedPost;
+    await newUser.save();
 
-    // Location
-    user.province = province;
-    user.district = district;
-    user.divisional_secretariat = divisional_secretariat;
-    user.grama_niladhari_division = grama_niladhari_division;
-    user.police_division = police_division;
+    // ✅ Send upload instructions email
+    await sendUploadInstructions(userEmail);
 
-    // Driving
-    user.driving_no = driving_no;
-    user.driving_no_issuing_date = driving_no_issuing_date;
+    res.json({ success: true, message: 'User information saved successfully', user: newUser,infoSuccess:true });
+    console.log(newUser.nic);
 
-    // OL and AL
-    user.ol = ol;
-    user.ol_index_1 = ol_index_1;
-    user.ol_index_2 = ol_index_2;
-    user.ol_index_3 = ol_index_3;
-    user.ol_year_1 = ol_year_1;
-    user.ol_year_2 = ol_year_2;
-    user.ol_year_3 = ol_year_3;
-
-    user.al = al;
-    user.al_index_1 = al_index_1;
-    user.al_index_2 = al_index_2;
-    user.al_index_3 = al_index_3;
-    user.al_year_1 = al_year_1;
-    user.al_year_2 = al_year_2;
-    user.al_year_3 = al_year_3;
-
-    // Education and Qualifications
-    // Education and Qualifications
-
-    user.al = typeof al === 'object' && !Array.isArray(al)
-  ? al
-  : { firstAttempt: [], secondAttempt: [], thirdAttempt: [] };
-
-  user.ol = typeof ol === 'object' && !Array.isArray(ol)
-  ? ol
-  : { firstAttempt: [], secondAttempt: [], thirdAttempt: [] };
-
-
-user.schools_Attended = Array.isArray(schools_Attended)
-  ? schools_Attended.filter(item => item.name_of_school)
-  : [];
-
-
-user.university = Array.isArray(university)
-  ? university.filter(item => item.institute && item.type && item.year && item.class && item.date)
-  : [];
-
-user.other_education = Array.isArray(other_education)
-  ? other_education.filter(item => item.institute && item.course)
-  : [];
-
-user.professional = Array.isArray(professional)
-  ? professional.filter(item => item.institute && item.course)
-  : [];
-
-user.sports = Array.isArray(sports)
-  ? sports.filter(item => item.activity)
-  : [];
-
-user.other = Array.isArray(other)
-  ? other.filter(item => item.qualification)
-  : [];
-
-// Work Experience
-user.presentOccupation = Array.isArray(presentOccupation)
-  ? presentOccupation.filter(item => item.post || item.place)
-  : [];
-
-user.postGrades = Array.isArray(postGrades)
-  ? postGrades.filter(item => item.grade)
-  : [];
-
-user.pastOccupation = Array.isArray(pastOccupation)
-  ? pastOccupation.filter(item => item.place || item.designation)
-  : [];
-
-
-    // Work
-    
-    user.presentOccupation_date = presentOccupation_date;
-   
-
-    await user.save();
-
-
-    res.json({ message: 'User info updated successfully', user });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Internal Server Error' });
+  } catch (err) {
+    console.error('Error in /add-info:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 });
+
+router.get('/list-files/:nic/:selectedPost', authenticateUser, async (req, res) => {
+  try {
+    const { nic, selectedPost } = req.params;
+
+    const user = await User.findOne({
+      nic,
+      selectedPost,
+      email: req.user.email // ensures only their own files are listed
+    });
+
+    if (!user || !user.fileName) {
+      return res.json({ files: [] });
+    }
+
+    res.json({
+      files: [{
+        name: user.fileName,
+        path: user.filePath
+      }]
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching file list' });
+  }
+});
+
+// --- File Upload Confirmation Email ---
+const sendFileUploadConfirmation = async (email) => {
+  try {
+    const mailOptions = {
+      from: `"RUCIT-UoR" <${process.env.USER}>`,
+      to: email,
+      subject: 'File Upload Successful',
+      text: `Your file has been successfully saved under the email: ${email}`,
+      html: `<p>Your file has been successfully saved under the email: <strong>${email}</strong>.</p>`
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`📩 File upload confirmation sent to ${email}`);
+  } catch (error) {
+    console.error("❌ Error sending file upload confirmation email:", error);
+  }
+};
+
+
+// File submission route (protected)
+router.post('/submit-file', authenticateUser, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+    // Optionally, save file info to user or DB here
+    const targetUserId = req.session?.returningUserId || req.user.id;
+    const user = await User.findById(targetUserId);
+
+    if (user) {
+      user.isSubmitted = true;
+       // Save relative path so we can serve it easily later
+      const relativePath = path.relative(
+        path.join(__dirname, '../uploads'),
+        req.file.path
+        );
+
+        user.filePath = relativePath;
+        user.fileName = req.file.filename;
+
+        await user.save();
+
+        // ✅ Send confirmation email
+        await sendFileUploadConfirmation(user.email);
+
+        }
+
+        res.redirect('/');
+
+      res.json({
+        message: 'File uploaded successfully',
+        filename: req.file.filename,
+        filePath: user.filePath
+      });
+    
+    
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'File upload failed' });
+  }
+});
+
+
+router.post('/handle-returning-user', authenticateUser, async (req, res) => {
+  const { action, Nic, choosePost, previousDate } = req.body;
+  
+  const normalize = (str) => (typeof str === 'string' ? str.trim().toLowerCase() : '');
+
+    if (action === 'new') {
+    // Just redirect for new action, no user lookup needed
+    return res.json({
+      message: 'Start a new application',
+      redirectTo: '/profile'
+    });
+  }
+
+if (action === 'continue') {
+
+
+  // Pick user with infoSuccess true or fallback to first one
+  const user = await User.findOne({
+      email: req.user.email,
+  nic: { $ne: null, $ne: '' },
+  selectedPost: { $ne: null, $ne: '' },
+     nic: { $regex: new RegExp(`^${normalize(Nic)}$`, 'i') },
+      selectedPost: choosePost,
+      date: previousDate
+  });
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  // Save this user for later uploads
+  req.session.returningUserId = user._id; // store in session
+
+  return res.json({
+      message: 'Continue your existing application',
+      redirectTo: '/profile/file-upload'
+    });
+  }
+
+  return res.status(400).json({ message: 'Invalid action' });
+});
+
+
+
+
+
 
 
 

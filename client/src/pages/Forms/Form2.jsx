@@ -43,7 +43,7 @@ const Form2 = () => {
           type="text"
           value={formData.fullName || ''}
           onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full" placeholder='--Vinura Nanayakkara--'
+          className="border px-4 py-2 rounded mb-3 w-full" placeholder='--Vinura Nanayakkara--'required
         />
 
         <label className="block mb-1">Name With Initials</label>
@@ -51,14 +51,14 @@ const Form2 = () => {
           type="text"
           value={formData.nameWithInitials || ''}
           onChange={(e) => setFormData({ ...formData, nameWithInitials: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full" placeholder='--V. Nanayakkara--'
+          className="border px-4 py-2 rounded mb-3 w-full" placeholder='--V. Nanayakkara--'required
         />
 
         <label className="block mb-1">Title</label>
         <select
           value={formData.gender || ''}
           onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full"
+          className="border px-4 py-2 rounded mb-3 w-full"required
         >
           <option value="">-- Select --</option>
           <option value="Mr">Mr</option>
@@ -70,7 +70,7 @@ const Form2 = () => {
         <select
           value={formData.selectedPost || ''}
           onChange={(e) => setFormData({ ...formData, selectedPost: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full"
+          className="border px-4 py-2 rounded mb-3 w-full" required
         >
          <option value="">-- Select --</option>
         {availablePosts.map((post, idx) => (
@@ -90,7 +90,7 @@ const Form2 = () => {
                 value={formData.height || ''}
                 onChange={(e) => setFormData({ ...formData, height: e.target.value })}
                 className="border px-4 py-2 rounded mb-3 w-full"
-                placeholder='Feet:.........  Inches:.........' 
+                placeholder='Feet:.........  Inches:.........' required
               />
               <label className="block mb-1">Chest :</label>
               <input
@@ -98,7 +98,7 @@ const Form2 = () => {
                 value={formData.chest || ''}
                 onChange={(e) => setFormData({ ...formData, chest: e.target.value })}
                 className="border px-4 py-2 rounded mb-3 w-full"
-                placeholder='Inches:.........' 
+                placeholder='Inches:.........' required
               />
           </div>
         )}
@@ -109,7 +109,7 @@ const Form2 = () => {
           type="text"
           value={formData.permanentAddress || ''}
           onChange={(e) => setFormData({ ...formData, permanentAddress: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full"placeholder='--Permanent Address--'
+          className="border px-4 py-2 rounded mb-3 w-full"placeholder='--Permanent Address--' required
         />
 
         <label className="block mb-1">Telephone Numbers</label>
@@ -126,16 +126,16 @@ const Form2 = () => {
           type="text"
           value={formData.telephoneMobile || ''}
           onChange={(e) => setFormData({ ...formData, telephoneMobile: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full" placeholder='--077 XXXXXXX--'
+          className="border px-4 py-2 rounded mb-3 w-full" placeholder='--077 XXXXXXX--' required
         />
         <label className="block mb-1">Date of Birth</label>
 
         
         <input
-          type="date"
+          type="date" required
           value={formData.dob || ''}
           onChange={(e) => {
-            const dobValue = e.target.value;
+            const dobValue = e.target.value; 
             const birthDate = new Date(dobValue);
 
             if (!closingDate) {
@@ -181,11 +181,11 @@ const Form2 = () => {
           type="text"
           value={formData.nic || ''}
           onChange={(e) => setFormData({ ...formData, nic: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full"
+          className="border px-4 py-2 rounded mb-3 w-full" required
         />
 
         
-        {formData.post === 'Driver' && (
+        {formData.selectedPost === 'Driver' && (
           <div>
             <label className="block mb-1">Driving License, No</label>
               <input
@@ -193,11 +193,11 @@ const Form2 = () => {
                 value={formData.driving_no || ''}
                 onChange={(e) => setFormData({ ...formData, driving_no: e.target.value })}
                 className="border px-4 py-2 rounded mb-3 w-full"
-                placeholder='--DL No--' 
+                placeholder='--DL No--' required
               />
               <label className="block mb-1">Issuing Date</label>
               <input
-                type="text"
+                type="date"
                 value={formData.driving_no_issuing_date || ''}
                 onChange={(e) => setFormData({ ...formData, driving_no_issuing_date: e.target.value })}
                 className="border px-4 py-2 rounded mb-3 w-full"
@@ -210,7 +210,7 @@ const Form2 = () => {
         <select
           value={formData.civilStatus || ''}
           onChange={(e) => setFormData({ ...formData, civilStatus: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full"
+          className="border px-4 py-2 rounded mb-3 w-full"required
         >
           <option value="">-- Select --</option>
           <option value="Married">Married</option>
@@ -225,7 +225,7 @@ const Form2 = () => {
         <select
           value={formData.citizenship || ''}
           onChange={(e) => setFormData({ ...formData, citizenship: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full"
+          className="border px-4 py-2 rounded mb-3 w-full" required
         >
           <option value="">-- Select --</option>
           <option value="Descent">By Descent</option>
@@ -235,7 +235,7 @@ const Form2 = () => {
           <div>
             <label className="block mb-1">Registration Number :</label>
               <input
-                type="text"
+                type="text" required
                 value={formData.register_no || ''}
                 onChange={(e) => setFormData({ ...formData, register_no: e.target.value })}
                 className="border px-4 py-2 rounded mb-3 w-full"
@@ -249,7 +249,7 @@ const Form2 = () => {
         <select
           value={formData.ethnicGroup || ''}
           onChange={(e) => setFormData({ ...formData, ethnicGroup: e.target.value })}
-          className="border px-4 py-2 rounded mb-4 w-full"
+          className="border px-4 py-2 rounded mb-4 w-full" required
         >
           <option value="">-- Select --</option>
           <option value="Sinhalese">Sinhalese</option>
@@ -262,7 +262,7 @@ const Form2 = () => {
         <select
           value={formData.province || ''}
           onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-          className="border px-4 py-2 rounded mb-4 w-full"
+          className="border px-4 py-2 rounded mb-4 w-full" required
         >
           <option value="">-- Select --</option>
           <option value="Western">Western</option>
@@ -282,7 +282,7 @@ const Form2 = () => {
           <select
             value={formData.district || ''}
             onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-            className="border px-4 py-2 rounded mb-4 w-full"
+            className="border px-4 py-2 rounded mb-4 w-full" required
           >
             <option value="">-- Select --</option>
             <option value="Colombo">Colombo</option>
@@ -386,12 +386,208 @@ const Form2 = () => {
         )}
 
         <label className="block mb-1">Divisional Secretariat</label>
-        <input
-          type="text"
-          value={formData.divisional_secretariat || ''}
-          onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
-          className="border px-4 py-2 rounded mb-3 w-full" placeholder='--Divisional Secretariat--'
-        />
+        {formData.district ==='Anuradhapura' && (
+          <select
+            value={formData.divisional_secretariat || ''}
+            onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
+            className="border px-4 py-2 rounded mb-4 w-full"
+          >
+            <option value="">-- Select --</option>
+            <option value="Padaviya">Padaviya</option>
+            <option value="Kebithigollewa">Kebithigollewa</option>
+            <option value="Rambewa">Rambewa</option>
+            <option value="horowpathana">horowpathana</option>
+            <option value="galenbindunuwewa">galenbindunuwewa</option>
+            <option value="kahtagasdigiliya">kahtagasdigiliya</option>
+            <option value="Nuwaragam palatha-East">Nuwaragam palatha-East</option>
+            <option value="Nachchaduwa">Nachchaduwa</option>
+            <option value="Nuwaragampalatha Central">Nuwaragampalatha Central</option>
+            <option value="Nochchiyagama">Nochchiyagama</option>
+            <option value=" Mahavilachchiya"> Mahavilachchiya</option>
+            <option value="Thalawa">Thalawa</option>
+            <option value="Thambuththegama">Thambuththegama</option>
+            <option value="Rajanganaya">Rajanganaya</option>
+            <option value="Gannewa">Gannewa</option>
+            <option value="ipalogama">ipalogama</option>
+            <option value=" mihinthale">mihinthale</option>
+            <option value="palugaswewa">palugaswewa</option>
+            <option value="Kekirawa">Kekirawa</option>
+            <option value="palagala">palagala</option>
+            <option value=""></option>
+          </select>
+        )}
+
+        {formData.district ==='Polonnaruwa' && (
+          <select
+            value={formData.divisional_secretariat || ''}
+            onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
+            className="border px-4 py-2 rounded mb-4 w-full"
+          >
+            <option value="">-- Select --</option>
+            <option value="Elahera ">Elahera </option>
+            <option value="Hingurakgoda">Hingurakgoda</option>
+            <option value="Lankapura ">Lankapura </option>
+            <option value="Thamankaduwa ">Thamankaduwa </option>
+            <option value="Dimbulagala ">Dimbulagala </option>
+            <option value="Welikanda ">Welikanda </option>
+            
+            <option value=""></option>
+          </select>
+        )}
+
+        {formData.district ==='Ampara' && (
+          <select
+            value={formData.divisional_secretariat || ''}
+            onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
+            className="border px-4 py-2 rounded mb-4 w-full"
+          >
+            <option value="">-- Select --</option>
+            <option value="Padiyathalawa ">Padiyathalawa </option>
+            <option value="Irakkamam">Irakkamam</option>
+            <option value="Uhana ">Uhana </option>
+            <option value="Karthiu ">Karthiu </option>
+            <option value="Thirukkovil ">Thirukkovil </option>
+            <option value="Addalachchenai ">Addalachchenai </option>
+            <option value="Damana ">Damana </option>
+            <option value="Sammanthuara ">Sammanthuara </option>
+            <option value="Alayadivembu ">Alayadivembu</option>
+            <option value="Akkarapaththu">Akkarapaththu </option>
+            <option value="Navidanveli ">Navidanveli </option>
+            <option value="Lahugala ">Lahugala </option>
+            <option value="Ampara ">Ampara </option>
+            <option value="Mahaoya ">Mahaoya </option>
+            <option value="Dehiaththakandiya ">Dehiaththakandiya </option>
+            <option value="Nindaur ">Nindaur </option>
+            <option value="Saaindamarudu ">Saaindamarudu</option>
+            <option value="Kalmunai ">Kalmunai </option>
+            <option value="Kalmunai north ">Kalmunai north </option>
+            <option value="Pottuvil ">Pottuvil </option>
+            <option value=""></option>
+          </select>
+        )}
+
+        {formData.district ==='Kalutara' && (
+          <select
+            value={formData.divisional_secretariat || ''}
+            onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
+            className="border px-4 py-2 rounded mb-4 w-full"
+          >
+            <option value="">-- Select --</option>
+            <option value="Kaluthara ">Kaluthara </option>
+            <option value="Dodangoda">Dodangoda</option>
+            <option value="Mathugama ">Mathugama </option>
+            <option value="Agalawatta ">Agalawatta </option>
+            <option value="Walallawita ">Walallawita</option>
+            <option value="Beruwala ">Beruwala </option>
+            <option value="Horana ">Horana </option>
+            <option value="Millaniya ">Millaniya </option>
+            <option value="Madurawala ">Madurawala </option>
+            <option value="Palindanuwara ">Palindanuwara </option>
+            <option value="Panadura ">Panadura </option>
+            <option value="Bulathsinhala ">Bulathsinhala </option>
+            <option value="Bandaragama ">Bandaragama </option>
+            <option value="Ingiriya ">Ingiriya </option>
+                 
+            
+            <option value=""></option>
+          </select>
+        )}
+
+ {formData.district ==='Kegalle' && (
+          <select
+            value={formData.divisional_secretariat || ''}
+            onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
+            className="border px-4 py-2 rounded mb-4 w-full"
+          >
+            <option value="">-- Select --</option>
+            <option value="Aranayake ">Aranayake </option>
+            <option value="Galigamuwa">Galigamuwa</option>
+            <option value="Warakapola ">Warakapola </option>
+            <option value="Ruwanwella ">Ruwanwella </option>
+            <option value="Yatiyantota ">Yatiyantota</option>
+            <option value="Bulathkohupitiya ">Bulathkohupitiya </option>
+            <option value="Deraniyagala">Deraniyagala </option>
+            <option value="Dehiowita ">Dehiowita </option>
+            <option value="Kegalle ">Kegalle</option>
+            <option value="Rambukkana ">Rambukkana </option>
+            <option value="Mawanella ">Mawanella </option>
+           
+                 
+            
+            <option value=""></option>
+          </select>
+        )}
+
+        {formData.district ==='Kurunegala' && (
+          <select
+            value={formData.divisional_secretariat || ''}
+            onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
+            className="border px-4 py-2 rounded mb-4 w-full"
+          >
+            <option value="">-- Select --</option>
+            <option value="Giribawa ">Giribawa </option>
+            
+            <option value="Galgamuwa ">Galgamuwa </option>
+            <option value="Ehetuwewa ">Ehetuwewa</option>
+            <option value="Mahawa ">Mahawa </option>
+            <option value="Ambanpola">Ambanpola </option>
+            <option value="Kotavehera ">Kotavehera</option>
+            <option value="Nikaweratiya ">Nikaweratiya </option>
+            <option value="Polpithigama ">Polpithigama </option>
+           <option value="Ibbagamuwa ">Ibbagamuwa </option>
+           <option value="Ganewattaa ">Ganewatta </option>
+           <option value="Wariyapola ">Wariyapola </option>
+           <option value="Bingiriya">Bingiriya </option>
+           <option value="Panduwasnuwara East ">Panduwasnuwara East </option>
+           <option value="Bamunakotuwa">Bamunakotuwa </option>      
+            <option value="Maspotha">Maspotha </option>
+            <option value="Kurunegala">Kurunegala </option>
+            <option value="Mallawapitiya">Mallawapitiya </option>
+            <option value="Mawathagama">Mawathagama </option>
+            <option value="Rideegama">Rideegama </option>
+            <option value="Weerambugedara">Weerambugedara </option>
+             <option value="Kuliyapitiya East">Kuliyapitiya East </option>
+              <option value="Kuliyapitiya West">Kuliyapitiya West </option>
+              <option value="Udubaddawa">Udubaddawa </option>
+              <option value="Pannala">Pannala </option>
+              <option value="Narammala">Narammala </option>
+              <option value="Alawwa">Alawwa </option>
+              <option value="Polgahawela">Polgahawela </option>
+            <option value=""></option>
+          </select>
+        )}
+        {formData.district ==='Matara' && (
+          <select
+            value={formData.divisional_secretariat || ''}
+            onChange={(e) => setFormData({ ...formData, divisional_secretariat: e.target.value })}
+            className="border px-4 py-2 rounded mb-4 w-full"
+          >
+            <option value="">-- Select --</option>
+            <option value="Mulatiyana ">Mulatiyana </option>
+            
+            <option value="Malimbada ">Malimbada </option>
+            <option value="Dickwella ">Dickwella</option>
+            <option value="Kotapola ">Kotapola</option>
+            <option value="Weligama">Weligama </option>
+            <option value="Hakmana ">Hakmana</option>
+            <option value="Thihagoda ">Thihagoda </option>
+            <option value="Kamburupitiya ">Kamburupitiya </option>
+           <option value="Athuraliya ">Athuraliya </option>
+           <option value="Welipitiya ">Welipitiya </option>
+           <option value="Akuressa ">Akuressa </option>
+           <option value="Devinuwara">Devinuwara </option>
+           <option value="Pitabeddara ">Pitabeddara </option>
+           <option value="Pasgoda">Pasgoda </option>      
+            <option value="Kirinda Puhulwella">Kirinda Puhulwella </option>
+            <option value="Matara">Matara </option>
+            
+             
+            <option value=""></option>
+          </select>
+        )}
+
+
+
         <label className="block mb-1">Grama Niladhari Division</label>
         <input
           type="text"

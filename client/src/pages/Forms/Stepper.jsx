@@ -3,7 +3,8 @@ const steps = [
   'Personal Information',
   'Contact Details',
   'Educational Qualifications',
-  'Work Experience',
+  'Present Work Experience',
+  'Past Work Experience',
   'Review & Submit',
 ];
 

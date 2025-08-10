@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
   googleId: String,
-  email: String,
+  email: String ,
 
   date:{ type: String },
   type:String,
@@ -46,38 +46,47 @@ const userSchema = new mongoose.Schema({
     al_year_1:String,
     al_year_2:String,
     al_year_3:String,
+    al_stream_1:String,
+    al_stream_2:String,
+    al_stream_3:String,
 
 
-    schools_Attended: [{ name_of_school: String, 
+    schools_Attended: {entries:[ {name_of_school: String, 
       from: String, 
-      to: String }],
+      to: String }]},
 
-    university: [{ 
-      institute: String, 
-      type: String, 
-      year: String, 
-      class: String, 
-      date: String 
-    }],
+      
+  university: {
+  entries: [
+    {
+      Institute: { type: String, default: '' },
+      type: { type: String, default: '' },
+      year: { type: String, default: '' },
+      class: { type: String, default: '' },
+      date: { type: String, default: '' }
+    }
+  ]
+},
 
-    other_education:[{ institute: String, 
+
+    other_education:{entries:[{ institute: String, 
       course: String,
      from:String,
      to:String, 
-     date:String }],
+     date:String }]},
 
-    professional:[{ institute: String, 
+    professional:{entries:[{ institute: String, 
       course: String,
       from:String,
       to:String, 
-      date: String }],
+      date: String }]},
 
-    sports:[{ activity: String, 
+    sports:{entries:[{ activity: String, 
       year: String, 
-      award: String }],
+      award: String }]},
 
-    other: [{ qualification: String, 
-      year: String }],
+    other: {entries:[{ qualification: String, 
+      year: String }]},
     
   age: String,
   gender:String,
@@ -95,13 +104,13 @@ const userSchema = new mongoose.Schema({
   ethnicGroup: String,
 
     // Step 4 (Work Experience)
-      presentOccupation:[{ post: String, place: String, jobStatus: String, salaryScale: String, basicSalary: String}],
+      presentOccupation:{entries: [{ post: String, place: String, jobStatus: String, salaryScale: String, basicSalary: String}]},
       presentOccupation_date: String,
 
-    postGrades: [{ grade: String, date: String}],
+    postGrades:{entries: [{ grade: String, date: String}]},
 
     // Step 5 (Relevant Experience for the post)
-    pastOccupation: [{ place: String, designation: String, from: String, to: String }],
+    pastOccupation:{entries: [{ place: String, designation: String, from: String, to: String }]},
 
   verified: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
@@ -117,7 +126,15 @@ const userSchema = new mongoose.Schema({
 },
   isDeleted: {
   type: Boolean,
-  default: false,},
+  default: false,
+},
+infoSuccess: { type: Boolean, default: false },
+isSubmitted:{type:Boolean,default:false},
+
+filePath: { type: String },
+fileName: { type: String }
+
+
 
 });
 

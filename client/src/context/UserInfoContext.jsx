@@ -8,6 +8,8 @@ export const UserInfoProvider = ({ children }) => {
    const [availableDates, setAvailableDates] = useState([]);
    const [availablePosts, setAvailablePosts] = useState([]);
    const [closingDate, setClosingDate] = useState('');
+   const [prefillUser, setPrefillUser] = useState(null);
+
    
   const [formData, setFormData] = useState({
     // Step 1
@@ -68,38 +70,47 @@ export const UserInfoProvider = ({ children }) => {
     al_year_1:'',
     al_year_2:'',
     al_year_3:'',
+    
 
+    schools_Attended:{ entries: [{ name_of_school: '', from: '', to: '' }]},
 
-    schools_Attended: [{ name_of_school: '', from: '', to: '' }],
+    university: { entries: [{ Institute: '', type: '', year: '', class: '', date: '' }] },
 
-    university: [{ institute: '', type: '', year: '', class: '', date: '' }],
+    other_education:{ entries: [{ institute: '', course: '',
+     from:'',to:'', date: '' }]},
 
-    other_education:[{ institute: '', course: '',
-     from:'',to:'', date: '' }],
+    professional:{ entries: [{ institute: '', course: '',
+      from:'',to:'', date: '' }]},
 
-    professional:[{ institute: '', course: '',
-      from:'',to:'', date: '' }],
+    sports:{ entries: [{ activity: '', year: '', award: '' }]},
 
-    sports:[{ activity: '', year: '', award: '' }],
-
-    other: [{ qualification: '', year: '' }],
+    other:{ entries: [{ qualification: '', year: '' }]},
     
 
     // Step 4 (Work Experience)
-      presentOccupation:[{ post: '', place: '', jobStatus: '', salaryScale: '', basicSalary: '' }],
+      presentOccupation:{ entries: [{ post: '', place: '', jobStatus: '', salaryScale: '', basicSalary: '' }]},
       presentOccupation_date: '',
 
-    postGrades: [{ grade: '', date: '' }],
+    postGrades:{ entries:  [{ grade: '', date: '' }]},
 
     // Step 5 (Relevant Experience for the post)
-    pastOccupation: [{ place: '', designation: '', from: '', to: '' }],
+    pastOccupation:{ entries: [{ place: '', designation: '', from: '', to: '' }]},
 
   //Admin specific data
   addPosts:[{ createddate: '', createdposts: [''] }],
   closingDate: '',
   setClosingDate:'',
 
+  
+    //
+    al_stream_1:'',
+    al_stream_2:'',
+    al_stream_3:'',
+
+
   });
+
+  
 
 
   return (
@@ -112,6 +123,9 @@ export const UserInfoProvider = ({ children }) => {
       setAvailablePosts,
       closingDate, 
       setClosingDate,
+      prefillUser,
+      setPrefillUser
+
          }}>
       {children}
     </UserInfoContext.Provider>

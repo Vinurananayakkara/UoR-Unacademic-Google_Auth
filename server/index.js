@@ -19,9 +19,17 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-//app.use(session({ secret: 'secret', resave: false, saveUninitialized: false }));
+app.use(session({ secret: 'secret', 
+  resave: false, 
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // true only in HTTPS
+    maxAge: 1000 * 60 * 60 // 1 hour
+  }
+ }));
 app.use(passport.initialize());
-//app.use(passport.session());
+app.use(passport.session());
 
 app.get('/test-session', (req, res) => {
   res.json({
@@ -29,6 +37,9 @@ app.get('/test-session', (req, res) => {
     user: req.user || null
   });
 });
+
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect(process.env.MONGODB_URL);
 
